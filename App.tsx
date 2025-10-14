@@ -1,20 +1,28 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts, ZenAntiqueSoft_400Regular } from '@expo-google-fonts/zen-antique-soft';
+import { Loading } from './src/components/common/Loading';
+import { RootNavigator } from './src/navigation/RootNavigator';
+import { ThemeProvider } from './src/contexts/ThemeContext';
+import './global.css';
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    ZenAntiqueSoft_400Regular,
+  });
+
+  if (!fontsLoaded) {
+    return <Loading />;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

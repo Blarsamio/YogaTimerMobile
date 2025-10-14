@@ -1,0 +1,226 @@
+import { Session, Timer, Asana, ApiResponse } from '../types';
+
+// Configuration for API endpoints
+// Development: Change LOCAL_IP to your machine's IP address when testing on physical devices
+// Example: const LOCAL_IP = '192.168.1.100'; for network access from mobile devices
+const LOCAL_IP = '192.168.12.39';
+
+const ENV = {
+  dev: `http://${LOCAL_IP}:3000`,
+  prod: 'https://your-production-api.com', // TODO: Replace with your actual production API URL before deployment
+};
+
+export const API_URL = __DEV__ ? ENV.dev : ENV.prod;
+
+export const endpoints = {
+  sessions: `${API_URL}/sessions`,
+  asanas: `${API_URL}/asanas`,
+  timer: (sessionId: number) => `${API_URL}/sessions/${sessionId}/timers`,
+  deleteTimer: (timerId: number) => `${API_URL}/timers/${timerId}`,
+};
+
+// API Service Class
+export class ApiService {
+  private static readonly TIMEOUT_MS = 10000; // 10 seconds
+
+  private static async fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout');
+      }
+      throw error;
+    }
+  }
+
+  private static async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
+    try {
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          data: null,
+          error: data.error || `HTTP Error: ${response.status}`,
+        };
+      }
+
+      return { data };
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  }
+
+  // Sessions API
+  static async getSessions(): Promise<ApiResponse<Session[]>> {
+    try {
+      const response = await this.fetchWithTimeout(endpoints.sessions);
+      return this.handleResponse<Session[]>(response);
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  static async getSession(id: number): Promise<ApiResponse<Session>> {
+    try {
+      const response = await this.fetchWithTimeout(`${endpoints.sessions}/${id}`);
+      return this.handleResponse<Session>(response);
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  static async createSession(sessionData: { name: string; description?: string }): Promise<ApiResponse<Session>> {
+    try {
+      const response = await this.fetchWithTimeout(endpoints.sessions, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sessionData),
+      });
+      return this.handleResponse<Session>(response);
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  static async updateSession(id: number, sessionData: { name?: string; description?: string }): Promise<ApiResponse<Session>> {
+    try {
+      const response = await this.fetchWithTimeout(`${endpoints.sessions}/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sessionData),
+      });
+      return this.handleResponse<Session>(response);
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  static async deleteSession(id: number): Promise<ApiResponse<null>> {
+    try {
+      const response = await this.fetchWithTimeout(`${endpoints.sessions}/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.status === 204) {
+        return { data: null };
+      }
+
+      return this.handleResponse<null>(response);
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  // Timers API
+  static async createTimer(sessionId: number, timerData: { duration: number; title?: string }): Promise<ApiResponse<Timer>> {
+    try {
+      const response = await this.fetchWithTimeout(endpoints.timer(sessionId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(timerData),
+      });
+      return this.handleResponse<Timer>(response);
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  static async deleteTimer(timerId: number): Promise<ApiResponse<null>> {
+    try {
+      const response = await this.fetchWithTimeout(endpoints.deleteTimer(timerId), {
+        method: 'DELETE',
+      });
+
+      if (response.status === 204) {
+        return { data: null };
+      }
+
+      return this.handleResponse<null>(response);
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  // Asanas API
+  static async getAsanas(): Promise<ApiResponse<Asana[]>> {
+    try {
+      const response = await this.fetchWithTimeout(endpoints.asanas);
+      return this.handleResponse<Asana[]>(response);
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  static async getAsana(id: number): Promise<ApiResponse<Asana>> {
+    try {
+      const response = await this.fetchWithTimeout(`${endpoints.asanas}/${id}`);
+      return this.handleResponse<Asana>(response);
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  // Utility functions
+  static formatDuration(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+  }
+
+  static convertMinutesToSeconds(minutes: number): number {
+    return minutes * 60;
+  }
+
+  static convertSecondsToMinutes(seconds: number): number {
+    return Math.round(seconds / 60);
+  }
+}
+
+// Export default for backwards compatibility
+export default ApiService;

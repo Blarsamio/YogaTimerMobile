@@ -1,0 +1,286 @@
+# YogaTimerMobile - Cursor AI Rules
+
+## 🧘‍♀️ Project Philosophy
+This is a **yin yoga timer mobile application** designed to support uninterrupted yin yoga practice. **Yin yoga** involves holding postures (asanas) for extended periods (3, 5, 10+ minutes), requiring precise timing and gentle transitions. The core principle is **minimizing distractions** and **maintaining a sense of calm and zen** throughout the practice.
+
+## 🕉️ Yin Yoga Practice Context
+
+### What is Yin Yoga?
+- **Long-held postures** - typically 3-10 minutes per asana
+- **Passive stretching** - focus on deep tissue and fascia
+- **Meditative practice** - emphasis on stillness and introspection
+- **Gentle transitions** - soft cues between postures to maintain calm state
+
+### App Core Functionality
+- **Predefined yoga sessions** with curated asana sequences and preset timers
+- **Custom session creation** allowing users to build their own practice
+- **Timer sequences** for each asana with clear naming and duration
+- **Sound cues** to signal transitions between postures (not jarring alarms)
+- **Optional background music** for enhanced relaxation during holds
+- **Session persistence** - save custom sessions to personal library
+
+### User Journey Flow
+1. **Choose session type**: Predefined sequence OR create custom
+2. **Configure timers**: Set duration for each asana (custom) OR review preset timers (predefined)
+3. **Select transition sound**: Choose gentle audio cue for asana changes
+4. **Choose background music**: Optional ambient sounds during practice
+5. **Start session**: Begin timed practice with clear visual countdown
+6. **During practice**: See current asana name, time remaining, gentle transition cues
+7. **Save session**: Store custom sequences for future use
+
+## 📱 Technical Stack & Architecture
+
+### Core Technologies
+- **React Native** with Expo (v53+)
+- **TypeScript** (strict mode preferred)
+- **NativeWind** (Tailwind CSS for React Native)
+- **React Navigation** v7 (native stack)
+- **AsyncStorage** for persistence
+- **Expo AV** for audio playback
+- **React Native Reanimated** for smooth animations
+
+### Mobile-First Principles
+- **Always prioritize mobile responsiveness** - this is a mobile-first application
+- Use `Dimensions.get('window')` for screen-adaptive layouts
+- Implement touch-friendly interactions (minimum 44pt touch targets)
+- Consider thumb-reachable zones for primary actions
+- Test on both iOS and Android interaction patterns
+
+## 🎨 Design System & Aesthetics
+
+### Color Palette
+```typescript
+const colors = {
+  accent: '#A99985',      // Primary accent color (warm beige)
+  surface: '#F5F1ED',     // Light surface (cream)
+  background: {
+    light: '#F5F5F5',     // Light mode background
+    dark: '#1C1C1C',      // Dark mode background
+  },
+  text: {
+    light: '#1C1C1C',     // Dark text on light
+    dark: '#F5F5F5',      // Light text on dark
+  },
+  card: {
+    light: '#F5F1ED',     // Light card background
+    dark: '#3D3D3D',      // Dark card background
+  }
+}
+```
+
+### Typography Hierarchy
+- **Headers**: `font-zen` (Zen Antique Soft) - for titles and key elements
+- **Body text**: `font-ubuntu-medium` - for readable content
+- **Use consistent text sizing**: `text-h1`, `text-h2`, `text-body`, etc.
+
+### Spacing & Layout
+- Use **consistent padding/margins**: `p-4`, `p-6`, `p-8` multiples
+- Prefer **rounded corners**: `rounded-2xl`, `rounded-3xl` for cards
+- **Generous whitespace** to maintain calm feeling
+- **Card-based layouts** with subtle shadows and borders
+
+## 🧘‍♀️ UX Principles for Yoga Practice
+
+### Calm & Zen Aesthetic
+- **Smooth animations** - use `react-native-reanimated` for fluid transitions
+- **Soft interactions** - `activeOpacity={0.7-0.8}` for gentle feedback
+- **Minimal cognitive load** - clear hierarchy, simple navigation
+- **Consistent visual language** - reuse design patterns across screens
+
+### Audio Experience for Yin Practice
+- **Gentle transition cues** - soft bells, bowls, or chimes (never alarms or beeps)
+- **Subtle volume levels** - sounds should complement, not interrupt the meditative state
+- **Preview functionality** - users must be able to hear transition sounds before choosing
+- **Background music separation** - transition cues and ambient music are distinct layers
+- **Silent mode support** - respect device silent mode preferences
+- **Graceful audio handling** - proper cleanup and error handling
+- **Long-hold consideration** - background music should be designed for 3-10+ minute loops
+
+### Interruption Management
+- **Persistent state** - save user progress to AsyncStorage frequently
+- **Graceful recovery** - handle app backgrounding/foregrounding
+- **Non-intrusive notifications** - if any, should be gentle and yoga-appropriate
+
+## 🛠️ Code Quality Guidelines
+
+### Component Structure
+```typescript
+// Preferred component structure
+export const ComponentName: React.FC<Props> = ({ prop1, prop2 }) => {
+  const { isDark } = useTheme();
+  const [localState, setLocalState] = useState();
+
+  // Computed values
+  const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
+
+  // Effects and handlers
+  useEffect(() => {
+    // Side effects
+  }, []);
+
+  const handleAction = () => {
+    // Event handlers
+  };
+
+  return (
+    <View className="styling-classes" style={{ backgroundColor }}>
+      {/* Component content */}
+    </View>
+  );
+};
+```
+
+### State Management
+- **AsyncStorage** for persistence (user preferences, session data)
+- **Local state** with useState for UI state
+- **Context** for theme and global settings
+- **Consistent storage keys** with prefixes (e.g., `'createTimer_timerList'`)
+
+### Yin Yoga Data Structures
+```typescript
+interface YinSession {
+  id: string;
+  name: string;
+  description?: string;
+  asanas: YinAsana[];
+  totalDuration: number;
+  isCustom: boolean;
+  createdAt: Date;
+  lastUsed?: Date;
+}
+
+interface YinAsana {
+  id: string;
+  name: string;
+  duration: number; // in minutes
+  description?: string;
+  instructions?: string;
+  modifications?: string[];
+}
+
+interface SessionPreferences {
+  transitionSound: string;
+  backgroundMusic: string | null;
+  volume: number;
+}
+```
+
+### Error Handling
+- **Graceful degradation** - app should never crash during yoga practice
+- **Silent error handling** with console.warn for development
+- **User-friendly fallbacks** when features fail
+- **Proper async/await** with try-catch blocks
+
+### Performance
+- **Optimize for smooth scrolling** - use FlatList for long lists
+- **Lazy loading** for heavy components
+- **Proper cleanup** - clear intervals, unload audio, remove listeners
+- **Memory management** - avoid memory leaks in timer/audio components
+
+## 🎵 Audio & Media Guidelines
+
+### Audio Implementation
+- Use **Expo AV** for consistent cross-platform audio
+- **Always handle audio permissions** and silent mode
+- **Provide audio previews** for user selections
+- **Clean up audio resources** properly (unloadAsync)
+- **Respect system audio session** - don't interrupt other apps rudely
+
+### Media Assets
+- **Compress images** appropriately for mobile
+- **Provide multiple densities** (@2x, @3x for iOS)
+- **Use web-friendly formats** (WebP when possible)
+- **Lazy load** non-critical images
+
+## 🚀 User Experience Flows
+
+### Custom Session Creation Flow
+1. **Session naming** - give the practice sequence a meaningful name
+2. **Asana selection** - choose postures with duration (3, 5, 10+ minutes typically)
+3. **Timer configuration** - set individual durations for each asana
+4. **Sound selection** - preview-enabled transition cues (gentle, not jarring)
+5. **Background music** - optional ambient sounds for deeper relaxation
+6. **Session start** - clear, confident call-to-action
+7. **Save option** - store custom sequence to personal library
+
+### Predefined Session Flow
+1. **Browse curated sessions** - professionally designed yin sequences
+2. **Review session details** - see asanas, durations, total time
+3. **Customize preferences** - choose transition sounds and background music
+4. **Optional editing** - modify timers if needed, save as new custom session
+5. **Session start** - begin the practice
+
+### Active Practice Experience
+- **Current asana display** - clear name of the posture being held
+- **Countdown timer** - prominent time remaining for current posture
+- **Progress indicator** - visual representation of session progress
+- **Gentle transitions** - soft audio cue when moving to next asana
+- **Minimal interactions** - pause/resume only, no complex controls
+- **Background ambiance** - optional music continues throughout holds
+- **Completion celebration** - peaceful end-of-practice acknowledgment
+
+### Session Management
+- **Personal library** - saved custom sessions accessible anytime
+- **Edit existing sessions** - modify predefined or custom sequences
+- **Session history** - track completed practices (optional)
+- **Export/share** - ability to share favorite sequences
+
+## 📐 Layout Patterns
+
+### Modal Design
+- **Card-based modals** with rounded corners and shadows
+- **Consistent sizing** - responsive width with max/min constraints
+- **Button positioning** - half-in/half-out for visual appeal
+- **Backdrop handling** - proper modal dismissal patterns
+
+### Navigation
+- **Gesture-friendly** - support swipe-back where appropriate
+- **Header consistency** - clean, minimal headers
+- **Tab patterns** - clear active states
+- **Deep linking** preparation for future features
+
+## 🔧 Development Practices
+
+### Testing Considerations
+- **Test on multiple screen sizes** (iPhone SE to iPad)
+- **Verify audio behavior** across different device states
+- **Check AsyncStorage persistence** across app lifecycle
+- **Validate dark/light mode** consistency
+
+### Accessibility
+- **Screen reader support** - proper accessibility labels
+- **Color contrast** - ensure sufficient contrast ratios
+- **Touch targets** - minimum 44pt interactive areas
+- **Focus management** - logical tab/focus order
+
+### Performance Monitoring
+- **Track bundle size** - keep app lightweight
+- **Monitor memory usage** during timer sessions
+- **Audio latency** - ensure responsive sound playback
+- **Storage efficiency** - clean up old session data
+
+## 💡 Innovation Guidelines
+
+### Feature Development
+- **Yin yoga-first thinking** - does this enhance long-hold posture practice?
+- **Simplicity over features** - resist feature creep that distracts from practice
+- **User testing** - validate with actual yin yoga practitioners and teachers
+- **Iterative improvement** - small, tested enhancements
+- **Respect for practice duration** - features should work for 30-90 minute sessions
+
+### Yin Yoga Specific Considerations
+- **Session variety** - beginner (20-30 min) to advanced (60-90 min) sequences
+- **Asana library** - comprehensive database of yin postures with proper names
+- **Teacher collaboration** - partner with yin yoga instructors for authentic sequences
+- **Accessibility options** - modifications for different body types and limitations
+- **Seasonal sequences** - align with yin yoga's connection to Traditional Chinese Medicine
+
+### Future Considerations
+- **Offline-first** - app should work without internet during practice
+- **Background audio** - proper session handling for long practices
+- **Wearable integration** - gentle vibrations for transition cues
+- **Analytics** - respectful, privacy-focused practice tracking
+- **Community features** - share sequences with other practitioners (optional)
+- **Integration** - connect with meditation apps and wellness platforms
+
+Remember: Every feature should serve the goal of creating a **peaceful, uninterrupted yin yoga practice experience**. The app supports holding postures for extended periods with minimal distractions. When in doubt, choose the path that maintains deep calm and supports meditative stillness.
