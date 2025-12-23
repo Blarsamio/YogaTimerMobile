@@ -39,6 +39,10 @@ export const HomeScreen: React.FC = () => {
     navigation.navigate('Sessions');
   };
 
+  const navigateToContact = () => {
+    navigation.navigate('Contact');
+  };
+
   // Start bounce animation when component mounts and repeat every 10 seconds
   useEffect(() => {
     const startBounceAnimation = () => {
@@ -149,22 +153,37 @@ export const HomeScreen: React.FC = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GestureDetector gesture={panGesture}>
-        <Animated.View className="flex-1" style={animatedStyle}>
+        <Animated.View className="flex-1" style={[animatedStyle, { flex: 1 }]}>
           {/* Top Section - Choose a timer */}
           <View
             className="flex-1"
             style={{ backgroundColor: topBgColor }}
           >
             <View className="flex-1 justify-center items-center relative">
+              {/* Contact button */}
+              <TouchableOpacity
+                onPress={navigateToContact}
+                className="absolute top-14 left-6 p-3 rounded-full z-30"
+                style={{ backgroundColor: 'rgba(169, 153, 133, 0.1)' }}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="help-circle"
+                  size={24}
+                  color={moonColor}
+                />
+              </TouchableOpacity>
+
               {/* Dark mode toggle */}
               <TouchableOpacity
                 onPress={toggleTheme}
-                className="absolute top-12 right-6 p-2 z-30"
+                className="absolute top-14 right-6 p-3 rounded-full z-30"
+                style={{ backgroundColor: 'rgba(169, 153, 133, 0.1)' }}
                 activeOpacity={0.7}
               >
                 <Ionicons
                   name={isDark ? "sunny" : "moon"}
-                  size={28}
+                  size={24}
                   color={moonColor}
                 />
               </TouchableOpacity>
@@ -175,33 +194,29 @@ export const HomeScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Center arrows section */}
+          {/* Center arrows section - positioned at the border between sections */}
           <View
-            className="absolute inset-x-0 top-0 bottom-0 z-10 items-center justify-center"
-            pointerEvents="none"
+            className="absolute inset-x-0 z-20 items-center"
+            style={{ top: '40%', transform: [{ translateY: -40 }], pointerEvents: 'none' }}
           >
-            <View className="items-center">
+            <View className="items-center bg-white/20 rounded-full p-4 backdrop-blur-sm">
               {/* Up Arrow with bounce animation */}
-              <Animated.View className="mb-1 p-2" style={upArrowAnimatedStyle}>
+              <Animated.View className="mb-2" style={upArrowAnimatedStyle}>
                 <Image
                   source={require('../../assets/icons/ArrowUp.png')}
-                  className="w-12 h-24"
-                  style={{
-                    tintColor: arrowColor,
-                    resizeMode: 'contain'
-                  }}
+                  className="w-8 h-8"
+                  tintColor={arrowColor}
+                  resizeMode="contain"
                 />
               </Animated.View>
 
               {/* Down Arrow with bounce animation */}
-              <Animated.View className="mt-1 p-2" style={downArrowAnimatedStyle}>
+              <Animated.View className="mt-2" style={downArrowAnimatedStyle}>
                 <Image
                   source={require('../../assets/icons/ArrowDown.png')}
-                  className="w-12 h-24"
-                  style={{
-                    tintColor: arrowColor,
-                    resizeMode: 'contain'
-                  }}
+                  className="w-8 h-8"
+                  tintColor={arrowColor}
+                  resizeMode="contain"
                 />
               </Animated.View>
             </View>

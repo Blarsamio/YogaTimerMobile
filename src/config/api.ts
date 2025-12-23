@@ -3,7 +3,7 @@ import { Session, Timer, Asana, ApiResponse } from '../types';
 // Configuration for API endpoints
 // Development: Change LOCAL_IP to your machine's IP address when testing on physical devices
 // Example: const LOCAL_IP = '192.168.1.100'; for network access from mobile devices
-const LOCAL_IP = '192.168.12.39';
+const LOCAL_IP = '192.168.100.83';
 
 const ENV = {
   dev: `http://${LOCAL_IP}:3000`,
@@ -45,14 +45,17 @@ export class ApiService {
 
   private static async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     try {
-      const data = await response.json();
+      const jsonResponse = await response.json();
 
       if (!response.ok) {
         return {
           data: null,
-          error: data.error || `HTTP Error: ${response.status}`,
+          error: jsonResponse.error || `HTTP Error: ${response.status}`,
         };
       }
+
+      // Unwrap the data property if it exists (Rails API wrapper)
+      const data = jsonResponse.data !== undefined ? jsonResponse.data : jsonResponse;
 
       return { data };
     } catch (error) {

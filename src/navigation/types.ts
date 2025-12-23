@@ -16,6 +16,7 @@ export type RootStackParamList = {
   SimpleTimer: { duration: number };
   CreateTimer: undefined;
   BackgroundMusic: undefined;
+  Contact: undefined;
 };
 
 // Type for screen props

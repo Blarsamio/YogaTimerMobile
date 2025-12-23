@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, ActivityIndicator, Text, Alert, TouchableOpacity } from 'react-native';
 import { SessionList } from '../components/SessionList';
 import { Session } from '../types';
-import { ApiService } from '../config/api';
+import { useSessions, useDeleteSession } from '../hooks/useSessions';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../contexts/ThemeContext';
@@ -12,39 +12,15 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Sessions'>;
 
 export const SessionsScreen: React.FC<Props> = ({ navigation }) => {
   const { isDark } = useTheme();
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: sessions = [], isLoading, error: queryError, refetch } = useSessions();
+  const { mutate: deleteSession } = useDeleteSession();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
   const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
 
   const handleBack = () => {
     navigation.navigate('Home');
-  };
-
-  useEffect(() => {
-    fetchSessions();
-  }, []);
-
-  const fetchSessions = async () => {
-    try {
-      setLoading(true);
-      const response = await ApiService.getSessions();
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      if (response.data) {
-        setSessions(response.data);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch sessions');
-      // Error fetching sessions
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleDelete = async (id: number) => {
@@ -56,21 +32,12 @@ export const SessionsScreen: React.FC<Props> = ({ navigation }) => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await ApiService.deleteSession(id);
-
-              if (response.error) {
-                throw new Error(response.error);
-              }
-
-              setSessions((prevSessions) =>
-                prevSessions.filter((session) => session.id !== id)
-              );
-            } catch (err) {
-              setError(err instanceof Error ? err.message : 'Failed to delete session');
-              // Error deleting session
-            }
+          onPress: () => {
+            deleteSession(id, {
+              onError: (err) => {
+                setDeleteError(err instanceof Error ? err.message : 'Failed to delete session');
+              },
+            });
           },
         },
       ]
@@ -86,7 +53,7 @@ export const SessionsScreen: React.FC<Props> = ({ navigation }) => {
     });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center" style={{ backgroundColor }}>
         <ActivityIndicator size="large" color="#A99985" />
@@ -94,10 +61,11 @@ export const SessionsScreen: React.FC<Props> = ({ navigation }) => {
           Loading yoga sessions...
         </Text>
       </View>
-          );
-    }
+    );
+  }
 
-  if (error) {
+  if (queryError || deleteError) {
+    const errorMsg = queryError ? (queryError as Error).message : deleteError;
     return (
       <View className="flex-1" style={{ backgroundColor }}>
         {/* Header with back button */}
@@ -115,10 +83,10 @@ export const SessionsScreen: React.FC<Props> = ({ navigation }) => {
             Unable to connect to server
           </Text>
           <Text className="text-sm text-center opacity-70 mb-4" style={{ color: textColor }}>
-            {error}
+            {errorMsg}
           </Text>
           <TouchableOpacity
-            onPress={fetchSessions}
+            onPress={() => refetch()}
             className="bg-accent px-6 py-3 rounded-lg"
             activeOpacity={0.8}
           >
