@@ -47,7 +47,7 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
     };
   }, []);
 
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
+  const textColor = isDark ? '#F5F5F3' : '#1C1C1C';
   const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
 
   const triggerHaptic = () => {

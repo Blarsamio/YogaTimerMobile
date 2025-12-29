@@ -50,11 +50,9 @@ export const CreateTimerScreen: React.FC = () => {
           if (Array.isArray(parsedTimers)) {
             setTimers(parsedTimers);
           } else {
-            // Invalid timer list format, resetting
             await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_LIST);
           }
         } catch (parseError) {
-          // Failed to parse saved timers, resetting
           await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_LIST);
         }
       }
@@ -67,7 +65,7 @@ export const CreateTimerScreen: React.FC = () => {
         setActiveTab(savedTab as 'timer' | 'sound');
       }
     } catch (error) {
-      // Failed to load persisted timer state
+      console.error('Failed to load persisted timer state:', error);
     }
   };
 
@@ -75,7 +73,7 @@ export const CreateTimerScreen: React.FC = () => {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.TIMER_LIST, JSON.stringify(timerList));
     } catch (error) {
-      // Failed to save timers
+      console.error('Failed to save timers:', error);
     }
   };
 
@@ -83,7 +81,7 @@ export const CreateTimerScreen: React.FC = () => {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.SELECTED_SOUND, sound);
     } catch (error) {
-      // Failed to save selected sound
+      console.error('Failed to save selected sound:', error);
     }
   };
 
@@ -91,7 +89,7 @@ export const CreateTimerScreen: React.FC = () => {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_TAB, tab);
     } catch (error) {
-      // Failed to save active tab
+      console.error('Failed to save active tab:', error);
     }
   };
 
@@ -139,7 +137,7 @@ export const CreateTimerScreen: React.FC = () => {
       ]);
       setTimers([]);
     } catch (error) {
-      // Failed to clear session
+      console.error('Failed to clear session:', error);
     }
   };
 
@@ -154,12 +152,11 @@ export const CreateTimerScreen: React.FC = () => {
       setSelectedSound('bowl');
       setActiveTab('timer');
     } catch (error) {
-      // Failed to clear all data
+      console.error('Failed to clear all data:', error);
     }
   };
 
   const handleNext = () => {
-    // Navigate to background music selection
     navigation.navigate('BackgroundMusic');
   };
 
@@ -172,7 +169,6 @@ export const CreateTimerScreen: React.FC = () => {
 
   return (
     <View className="flex-1 px-6 pt-16" style={{ backgroundColor }}>
-      {/* Header with back button */}
       <View className="flex-row items-center mb-8">
         <BackButton onPress={handleBack} />
         <View className="flex-1 ml-4">
@@ -182,7 +178,6 @@ export const CreateTimerScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Toggle buttons */}
       <View className="flex-row mb-8">
         <TouchableOpacity
           onPress={() => {
@@ -193,7 +188,7 @@ export const CreateTimerScreen: React.FC = () => {
           className={`flex-1 py-3 px-6 rounded-l-lg border ${
             activeTab === 'timer'
               ? 'bg-accent border-accent'
-              : 'bg-surface border-accent/30'
+              : 'bg-surface dark:bg-primary-black border-accent/30'
           }`}
           activeOpacity={0.8}
         >
@@ -216,7 +211,7 @@ export const CreateTimerScreen: React.FC = () => {
           className={`flex-1 py-3 px-6 rounded-r-lg border ${
             activeTab === 'sound'
               ? 'bg-accent border-accent'
-              : 'bg-surface border-accent/30'
+              : 'bg-surface dark:bg-primary-black border-accent/30'
           }`}
           activeOpacity={0.8}
         >
@@ -231,7 +226,6 @@ export const CreateTimerScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Timer list */}
       <View className="flex-1">
         <FlatList
           data={timers}
@@ -242,7 +236,6 @@ export const CreateTimerScreen: React.FC = () => {
         />
       </View>
 
-      {/* Next button */}
       {timers.length > 0 && (
         <View className="pb-8 pt-4">
           <Button
@@ -254,7 +247,6 @@ export const CreateTimerScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Modals */}
       <TimerCreateModal
         isOpen={isTimerModalOpen}
         onClose={() => setIsTimerModalOpen(false)}

@@ -10,16 +10,13 @@ interface TimerProps {
 export const Timer: React.FC<TimerProps> = ({ duration, title }) => {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isActive, setIsActive] = useState(false);
-
-  // Create audio player for timer completion sound
   const player = useAudioPlayer(require('../../assets/audio/bowl.wav'));
 
   function playSound() {
     try {
-      player.seekTo(0); // Reset to beginning
+      player.seekTo(0);
       player.play();
     } catch (error) {
-      // Error playing sound
     }
   }
 

@@ -37,7 +37,6 @@ export const SwipeableTimerItem: React.FC<SwipeableTimerItemProps> = ({
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
-      // Only allow left swipe (negative values)
       if (event.translationX < 0) {
         translateX.value = Math.max(event.translationX, DELETE_THRESHOLD);
       }
@@ -46,13 +45,11 @@ export const SwipeableTimerItem: React.FC<SwipeableTimerItemProps> = ({
       const shouldDelete = translateX.value < DELETE_THRESHOLD / 2;
 
       if (shouldDelete) {
-        // Fade out delete button and animate item off screen
         deleteOpacity.value = withSpring(0);
         translateX.value = withSpring(-SCREEN_WIDTH, {}, () => {
           runOnJS(onDelete)(item.id);
         });
       } else {
-        // Snap back to original position
         translateX.value = withSpring(0);
       }
     });
@@ -84,11 +81,10 @@ export const SwipeableTimerItem: React.FC<SwipeableTimerItemProps> = ({
   };
 
   return (
-    <View className="mb-3 relative">
-      {/* Delete button background */}
+    <View className="mb-2 relative">
       <Animated.View
         style={[deleteButtonStyle]}
-        className="absolute right-0 top-0 bottom-0 justify-center items-center bg-red-300 rounded-r-full"
+        className="absolute right-0 top-0 bottom-0 justify-center items-center bg-red-500 rounded-r-full overflow-hidden z-[-1]"
         pointerEvents="box-none"
       >
         <TouchableOpacity
@@ -96,15 +92,14 @@ export const SwipeableTimerItem: React.FC<SwipeableTimerItemProps> = ({
           className="w-32 h-full justify-center items-center"
           activeOpacity={0.7}
         >
-          <Ionicons name="trash-outline" size={20} color="white" />
+          <Ionicons name="trash-outline" size={24} color="white" />
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Timer item */}
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[animatedStyle]}>
           <TouchableOpacity
-            className="bg-surface border border-accent/30 rounded-full py-4 px-6"
+            className="bg-surface dark:bg-[#1C1C1C] border border-accent/30 rounded-full py-4 px-6"
             activeOpacity={0.7}
           >
             <Text
