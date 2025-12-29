@@ -88,7 +88,7 @@ export const RootNavigator = () => {
       <Stack.Screen
         name="Contact"
         component={ContactScreen}
-        options={{ headerShown: true }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
