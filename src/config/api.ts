@@ -15,13 +15,13 @@ export const API_URL = __DEV__ ? ENV.dev : ENV.prod;
 export const endpoints = {
   sessions: `${API_URL}/sessions`,
   asanas: `${API_URL}/asanas`,
-  timer: (sessionId: number) => `${API_URL}/sessions/${sessionId}/timers`,
-  deleteTimer: (timerId: number) => `${API_URL}/timers/${timerId}`,
+  timer: (sessionId: number | string) => `${API_URL}/sessions/${sessionId}/timers`,
+  deleteTimer: (timerId: number | string) => `${API_URL}/timers/${timerId}`,
 };
 
 // API Service Class
 export class ApiService {
-  private static readonly TIMEOUT_MS = 10000; // 10 seconds
+  private static readonly TIMEOUT_MS = 10000;
 
   private static async fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
     const controller = new AbortController();
@@ -54,7 +54,6 @@ export class ApiService {
         };
       }
 
-      // Unwrap the data property if it exists (Rails API wrapper)
       const data = jsonResponse.data !== undefined ? jsonResponse.data : jsonResponse;
 
       return { data };
@@ -66,7 +65,6 @@ export class ApiService {
     }
   }
 
-  // Sessions API
   static async getSessions(): Promise<ApiResponse<Session[]>> {
     try {
       const response = await this.fetchWithTimeout(endpoints.sessions);
@@ -79,7 +77,7 @@ export class ApiService {
     }
   }
 
-  static async getSession(id: number): Promise<ApiResponse<Session>> {
+  static async getSession(id: number | string): Promise<ApiResponse<Session>> {
     try {
       const response = await this.fetchWithTimeout(`${endpoints.sessions}/${id}`);
       return this.handleResponse<Session>(response);
@@ -109,7 +107,7 @@ export class ApiService {
     }
   }
 
-  static async updateSession(id: number, sessionData: { name?: string; description?: string }): Promise<ApiResponse<Session>> {
+  static async updateSession(id: number | string, sessionData: { name?: string; description?: string }): Promise<ApiResponse<Session>> {
     try {
       const response = await this.fetchWithTimeout(`${endpoints.sessions}/${id}`, {
         method: 'PATCH',
@@ -127,7 +125,7 @@ export class ApiService {
     }
   }
 
-  static async deleteSession(id: number): Promise<ApiResponse<null>> {
+  static async deleteSession(id: number | string): Promise<ApiResponse<null>> {
     try {
       const response = await this.fetchWithTimeout(`${endpoints.sessions}/${id}`, {
         method: 'DELETE',
@@ -146,8 +144,7 @@ export class ApiService {
     }
   }
 
-  // Timers API
-  static async createTimer(sessionId: number, timerData: { duration: number; title?: string }): Promise<ApiResponse<Timer>> {
+  static async createTimer(sessionId: number | string, timerData: { duration: number; title?: string }): Promise<ApiResponse<Timer>> {
     try {
       const response = await this.fetchWithTimeout(endpoints.timer(sessionId), {
         method: 'POST',
@@ -165,7 +162,7 @@ export class ApiService {
     }
   }
 
-  static async deleteTimer(timerId: number): Promise<ApiResponse<null>> {
+  static async deleteTimer(timerId: number | string): Promise<ApiResponse<null>> {
     try {
       const response = await this.fetchWithTimeout(endpoints.deleteTimer(timerId), {
         method: 'DELETE',
@@ -184,7 +181,6 @@ export class ApiService {
     }
   }
 
-  // Asanas API
   static async getAsanas(): Promise<ApiResponse<Asana[]>> {
     try {
       const response = await this.fetchWithTimeout(endpoints.asanas);
@@ -209,7 +205,6 @@ export class ApiService {
     }
   }
 
-  // Utility functions
   static formatDuration(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -225,5 +220,4 @@ export class ApiService {
   }
 }
 
-// Export default for backwards compatibility
 export default ApiService;

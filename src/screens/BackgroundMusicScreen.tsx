@@ -7,7 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AudioPlayer } from 'expo-audio';
+import { useAudioPlayer } from 'expo-audio';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -21,8 +21,8 @@ interface BackgroundMusicTrack {
   id: string;
   name: string;
   description: string;
-  image: number; // Required image asset from require()
-  preview?: string; // Audio file path for preview
+  image: number;
+  preview?: string;
 }
 
 const BACKGROUND_IMAGES = {
@@ -32,7 +32,6 @@ const BACKGROUND_IMAGES = {
   'tibetan-bowls': require('../../assets/images/background-music/tibetan-bowls.jpg'),
 }
 
-// Placeholder music tracks - replace with actual tracks later
 const BACKGROUND_MUSIC_TRACKS: BackgroundMusicTrack[] = [
   {
     id: 'nature-meditation',
@@ -80,14 +79,13 @@ export const BackgroundMusicScreen: React.FC = () => {
   const [timers, setTimers] = useState<Timer[]>([]);
   const [selectedSound, setSelectedSound] = useState('bowl');
   const [previewPlaying, setPreviewPlaying] = useState<string | null>(null);
-  
-  const previewSoundRef = useRef<AudioPlayer | null>(null);
+
+  const previewPlayer = useAudioPlayer(require('../../assets/audio/bowl.wav'));
 
   const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
   const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
   const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
 
-  // Load session data
   const loadSessionData = async () => {
     try {
       const [savedTimers, savedSound, savedBackgroundMusic] = await Promise.all([
@@ -115,11 +113,10 @@ export const BackgroundMusicScreen: React.FC = () => {
         }
       }
     } catch (error) {
-      // Failed to load session data
+
     }
   };
 
-  // Save background music selection
   const saveBackgroundMusicSelection = async (musicId: string | null, noMusic: boolean) => {
     try {
       const musicData = {
@@ -129,7 +126,6 @@ export const BackgroundMusicScreen: React.FC = () => {
       };
       await AsyncStorage.setItem(STORAGE_KEYS.BACKGROUND_MUSIC, JSON.stringify(musicData));
     } catch (error) {
-      // Failed to save background music selection
     }
   };
 
@@ -162,89 +158,59 @@ export const BackgroundMusicScreen: React.FC = () => {
     try {
       await Promise.all([
         AsyncStorage.removeItem(STORAGE_KEYS.TIMERS),
-        // Keep sound and background music preferences for next time
       ]);
     } catch (error) {
-      // Failed to clear session data
     }
   };
 
-  const handlePreviewToggle = async (trackId: string) => {
+  const handlePreviewToggle = (trackId: string) => {
     try {
       if (previewPlaying === trackId) {
-        // Stop current preview
-        if (previewSoundRef.current) {
-          await previewSoundRef.current.stopAsync();
-          previewSoundRef.current = null;
-        }
+        previewPlayer.pause();
+        previewPlayer.seekTo(0);
         setPreviewPlaying(null);
       } else {
-        // Stop any currently playing preview
-        if (previewSoundRef.current) {
-          await previewSoundRef.current.stopAsync();
-          previewSoundRef.current = null;
-        }
-
-        // For now, we'll simulate preview with a sample sound
-        // In a real app, you'd load the actual music track file
-        const player = new AudioPlayer(require('../../assets/audio/bowl.wav'));
-        await player.play();
-        
-        previewSoundRef.current = player;
+        previewPlayer.seekTo(0);
+        previewPlayer.play();
         setPreviewPlaying(trackId);
       }
     } catch (error) {
-      // Error handling preview sound
       setPreviewPlaying(null);
     }
   };
-
-  // Cleanup preview sound on unmount or screen blur
   useEffect(() => {
     return () => {
-      if (previewSoundRef.current) {
-        previewSoundRef.current.stopAsync();
-      }
+      previewPlayer.pause();
     };
-  }, []);
+  }, [previewPlayer]);
 
   useFocusEffect(
     React.useCallback(() => {
       return () => {
-        // Stop preview when leaving screen
-        if (previewSoundRef.current) {
-          previewSoundRef.current.stopAsync();
-          previewSoundRef.current = null;
-        }
+        previewPlayer.pause();
         setPreviewPlaying(null);
       };
-    }, [])
+    }, [previewPlayer])
   );
 
   const handleStart = async () => {
-    // Create a session object from the custom timers
     const customSession = {
-      id: Date.now(), // Use timestamp as temporary ID for custom sessions
+      id: Date.now(),
       name: 'Custom Practice',
       description: 'Your personalized yin yoga flow',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       timers: timers.map((timer, index) => ({
-        id: parseInt(timer.id),
-        duration: timer.duration * 60, // Convert minutes to seconds for execution
+        id: timer.id,
+        duration: timer.duration * 60,
         title: timer.label,
-        session_id: Date.now(),
+        session_id: Date.now().toString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })),
     };
 
-    // Starting custom session with configured settings
-
-    // Clear the timer list since the session is starting
     await clearSessionData();
-
-    // Navigate to SessionExecution with the custom session
     navigation.navigate('SessionExecution', {
       session: customSession,
       transitionSound: selectedSound,
@@ -266,14 +232,12 @@ export const BackgroundMusicScreen: React.FC = () => {
         activeOpacity={0.8}
       >
         <View className="flex-1 relative">
-          {/* Background music track image */}
           <Image
             source={track.image}
             className="flex-1 w-full"
             resizeMode="cover"
           />
 
-          {/* Overlay with gradient for text readability */}
           <View className="absolute bottom-0 left-0 right-0 bg-black/50 p-4">
             <Text
               className="text-lg font-zen text-white text-center"
@@ -287,14 +251,12 @@ export const BackgroundMusicScreen: React.FC = () => {
             </Text>
           </View>
 
-          {/* Selection indicator */}
           {isSelected && (
             <View className="absolute top-4 right-4 w-8 h-8 rounded-full bg-accent items-center justify-center">
               <Ionicons name="checkmark" size={18} color="white" />
             </View>
           )}
 
-          {/* Play preview button */}
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
@@ -303,10 +265,10 @@ export const BackgroundMusicScreen: React.FC = () => {
             className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-accent/90 items-center justify-center"
             activeOpacity={0.7}
           >
-            <Ionicons 
-              name={previewPlaying === track.id ? "pause" : "play"} 
-              size={20} 
-              color="white" 
+            <Ionicons
+              name={previewPlaying === track.id ? "pause" : "play"}
+              size={20}
+              color="white"
             />
           </TouchableOpacity>
         </View>
@@ -316,7 +278,6 @@ export const BackgroundMusicScreen: React.FC = () => {
 
   return (
     <View className="flex-1 px-6 pt-16" style={{ backgroundColor }}>
-      {/* Header */}
       <View className="flex-row items-center mb-8">
         <BackButton onPress={handleBack} />
         <View className="flex-1 ml-4">
@@ -326,7 +287,6 @@ export const BackgroundMusicScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Tab indicators (Presets, Music, Custom) */}
       <View className="flex-row justify-center mb-8">
         <View className="flex-row bg-accent/10 rounded-full p-1">
           <View className="px-4 py-2 rounded-full bg-accent">
@@ -342,7 +302,6 @@ export const BackgroundMusicScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Music Carousel */}
       <View className="flex-1 justify-center">
         <ScrollView
           horizontal
@@ -364,7 +323,6 @@ export const BackgroundMusicScreen: React.FC = () => {
           {BACKGROUND_MUSIC_TRACKS.map((track, index) => renderMusicCard(track, index))}
         </ScrollView>
 
-        {/* Dots indicator */}
         <View className="flex-row justify-center mt-6">
           {BACKGROUND_MUSIC_TRACKS.map((_, index) => (
             <View
@@ -377,7 +335,6 @@ export const BackgroundMusicScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* No Background Music Option */}
       <View className="mb-8">
         <TouchableOpacity
           onPress={handleNoMusicToggle}
@@ -405,7 +362,6 @@ export const BackgroundMusicScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Bottom buttons */}
       <View className="flex-row gap-4 pb-8">
         <TouchableOpacity
           onPress={handleBack}

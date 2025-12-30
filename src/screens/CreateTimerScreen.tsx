@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, FlatList, Text } from 'react-native';
+import { View, TouchableOpacity, FlatList, Text, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { H1, Button, BackButton } from '../components/ui';
@@ -8,6 +8,7 @@ import { RootStackParamList } from '../navigation/types';
 import { TimerCreateModal } from '../components/TimerCreateModal';
 import { SoundSelectModal } from '../components/SoundSelectModal';
 import { SwipeableTimerItem } from '../components/SwipeableTimerItem';
+import { IntermissionModal } from '../components/IntermissionModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -31,6 +32,7 @@ export const CreateTimerScreen: React.FC = () => {
   const [timers, setTimers] = useState<Timer[]>([]);
   const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
   const [isSoundModalOpen, setIsSoundModalOpen] = useState(false);
+  const [isIntermissionModalOpen, setIsIntermissionModalOpen] = useState(false);
   const [selectedSound, setSelectedSound] = useState<string>('bowl');
 
   const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
@@ -157,6 +159,33 @@ export const CreateTimerScreen: React.FC = () => {
   };
 
   const handleNext = () => {
+    setIsIntermissionModalOpen(true);
+  };
+
+  const handleIntermissionSelect = (duration: number) => {
+    setIsIntermissionModalOpen(false);
+
+    let finalTimers = [...timers];
+
+    if (duration > 0 && timers.length > 1) {
+      const timersWithIntermission: Timer[] = [];
+
+      timers.forEach((timer, index) => {
+        timersWithIntermission.push(timer);
+
+        if (index < timers.length - 1) {
+          timersWithIntermission.push({
+            id: `intermission-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+            duration: duration / 60,
+            label: 'Switch Pose',
+          });
+        }
+      });
+
+      finalTimers = timersWithIntermission;
+    }
+
+    saveTimersToStorage(finalTimers);
     navigation.navigate('BackgroundMusic');
   };
 
@@ -261,6 +290,12 @@ export const CreateTimerScreen: React.FC = () => {
           setSelectedSound(sound);
           saveSelectedSoundToStorage(sound);
         }}
+      />
+
+      <IntermissionModal
+        isOpen={isIntermissionModalOpen}
+        onClose={() => setIsIntermissionModalOpen(false)}
+        onSelectIntermission={handleIntermissionSelect}
       />
     </View>
   );

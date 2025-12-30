@@ -1,6 +1,6 @@
 // Backend API Types (matching Rails models)
 export interface Session {
-  id: number;
+  id: number | string;
   name: string;
   description?: string;
   created_at: string;
@@ -9,10 +9,10 @@ export interface Session {
 }
 
 export interface Timer {
-  id: number;
+  id: number | string;
   duration: number; // Duration in seconds (Rails stores in seconds)
   title?: string;
-  session_id: number;
+  session_id: number | string;
   created_at: string;
   updated_at: string;
 }

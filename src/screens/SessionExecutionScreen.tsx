@@ -44,7 +44,6 @@ export const SessionExecutionScreen: React.FC = () => {
   const completionAnim = useRef(new Animated.Value(0)).current;
   const completionOpacity = useRef(new Animated.Value(0)).current;
 
-  // Available transition sounds
   const availableSounds = [
     { id: 'bowl', name: 'Singing Bowl' },
     { id: 'chime', name: 'Wind Chime' },
@@ -52,9 +51,8 @@ export const SessionExecutionScreen: React.FC = () => {
     { id: 'gong', name: 'Tibetan Gong' },
   ];
 
-  // Audio players
   const transitionPlayer = useAudioPlayer(
-    require('../../assets/audio/bowl.wav') // Default sound, will be customized
+    require('../../assets/audio/bowl.wav')
   );
 
   const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
@@ -62,14 +60,11 @@ export const SessionExecutionScreen: React.FC = () => {
   const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
   const accentColor = '#A99985';
 
-  // Get current timer
   const currentTimer = executionState.session.timers[executionState.currentTimerIndex];
   const isLastTimer = executionState.currentTimerIndex === executionState.session.timers.length - 1;
 
-  // Circular progress calculation
   const circularProgress = currentTimer ? (1 - (timeRemaining / currentTimer.duration)) : 0;
 
-  // Side panel animation functions
   const toggleSidePanel = () => {
     const toValue = showSidePanel ? 0 : 1;
     setShowSidePanel(!showSidePanel);
@@ -95,15 +90,12 @@ export const SessionExecutionScreen: React.FC = () => {
     setExecutionState(prev => ({ ...prev, isPlaying: false }));
     setShowCompletion(true);
 
-    // Start celebration animation
     Animated.parallel([
-      // Expanding circle animation
       Animated.timing(completionAnim, {
         toValue: 1,
         duration: 2000,
         useNativeDriver: true,
       }),
-      // Fade in gratitude message
       Animated.timing(completionOpacity, {
         toValue: 1,
         duration: 1500,
@@ -111,15 +103,7 @@ export const SessionExecutionScreen: React.FC = () => {
       }),
     ]).start();
 
-    // Show save options after celebration (for custom sessions)
     setTimeout(() => {
-      // Analyze session completion info
-
-            // More robust custom session detection:
-      // - No ID means it's temporary/custom
-      // - ID starts with 'custom_'
-      // - Session name is "Custom Practice" (default for custom sessions)
-      // - Session has a timestamp-based ID (> 1000000000000, indicating timestamp)
       const sessionId = executionState.session.id;
       const sessionName = executionState.session.name;
       const isCustomSession = !sessionId ||
@@ -127,31 +111,32 @@ export const SessionExecutionScreen: React.FC = () => {
                              sessionName === 'Custom Practice' ||
                              (typeof sessionId === 'number' && sessionId > 1000000000000);
 
-      // Determine if this is a custom session
-
       if (isCustomSession) {
-        // Generate a default session name based on content
         const totalMinutes = executionState.session.timers.reduce((sum, timer) => sum + Math.ceil(timer.duration / 60), 0);
         const timerCount = executionState.session.timers.length;
         const defaultName = `My ${totalMinutes}-Minute Session (${timerCount} poses)`;
         setSessionName(defaultName);
         setShowSaveOptions(true);
       } else {
-        // For predefined sessions, just go home
         navigation.navigate('Home');
       }
     }, 3000);
   }, [completionAnim, completionOpacity, navigation, executionState.session.id, executionState.session.timers, executionState.session.name]);
 
   const handleTimerComplete = useCallback(async () => {
-    // Play transition sound
     try {
-      transitionPlayer.play();
+      if (transitionPlayer) {
+        if (transitionPlayer.playing) {
+          transitionPlayer.pause();
+        }
+        transitionPlayer.seekTo(0);
+        transitionPlayer.play();
+      }
     } catch (error) {
       // Failed to play transition sound
+      console.log('Error playing sound:', error);
     }
 
-    // Move to next timer or complete session
     if (isLastTimer) {
       handleSessionComplete();
     } else {
@@ -166,7 +151,6 @@ export const SessionExecutionScreen: React.FC = () => {
     }
   }, [isLastTimer, transitionPlayer, executionState.session.timers, executionState.currentTimerIndex, handleSessionComplete]);
 
-    // Initialize audio
   useEffect(() => {
     const setupAudio = async () => {
       try {
@@ -175,18 +159,15 @@ export const SessionExecutionScreen: React.FC = () => {
           playsInSilentMode: true,
         });
       } catch (error) {
-        // Failed to configure audio
+        console.log('Error configuring audio:', error);
       }
     };
 
-                setupAudio();
+    setupAudio();
     setTimeRemaining(currentTimer?.duration || 0);
-
-    // Auto-start the session
     setExecutionState(prev => ({ ...prev, isPlaying: true }));
   }, [currentTimer?.duration]);
 
-  // Timer logic
   useEffect(() => {
     if (executionState.isPlaying && !executionState.isPaused && currentTimer) {
       intervalRef.current = setInterval(() => {
@@ -196,7 +177,6 @@ export const SessionExecutionScreen: React.FC = () => {
 
           setTimeRemaining(newTimeRemaining);
 
-          // Timer completed
           if (newElapsed >= currentTimer.duration) {
             handleTimerComplete();
             return prev;
@@ -232,7 +212,6 @@ export const SessionExecutionScreen: React.FC = () => {
         {
           text: 'Skip',
           onPress: () => {
-            // Clear current timer and move to next
             setExecutionState(prev => ({
               ...prev,
               currentTimerElapsed: 0,
@@ -255,7 +234,7 @@ export const SessionExecutionScreen: React.FC = () => {
     });
   };
 
-                    const handlePlayPause = () => {
+  const handlePlayPause = () => {
     setExecutionState(prev => {
       const newIsPlaying = !prev.isPlaying;
 
@@ -267,7 +246,7 @@ export const SessionExecutionScreen: React.FC = () => {
     });
   };
 
-    const handleSaveSession = async () => {
+  const handleSaveSession = async () => {
     if (!sessionName.trim()) {
       Alert.alert('Session Name Required', 'Please enter a name for your session.');
       return;
@@ -275,7 +254,6 @@ export const SessionExecutionScreen: React.FC = () => {
 
     setIsSaving(true);
     try {
-      // Step 1: Create the session first
       const sessionResponse = await ApiService.createSession({
         name: sessionName.trim(),
         description: 'Custom yoga session',
@@ -286,9 +264,7 @@ export const SessionExecutionScreen: React.FC = () => {
       }
 
       const createdSession = sessionResponse.data;
-      // Session created successfully
 
-      // Step 2: Create each timer for the session
       const timerPromises = executionState.session.timers.map(timer =>
         ApiService.createTimer(createdSession.id, {
           title: timer.title,
@@ -298,13 +274,9 @@ export const SessionExecutionScreen: React.FC = () => {
 
       const timerResults = await Promise.all(timerPromises);
 
-      // Check if any timers failed to create
       const failedTimers = timerResults.filter(result => result.error);
       if (failedTimers.length > 0) {
-        // Some timers failed to create
       }
-
-      // All timers created successfully
 
       Alert.alert(
         'Session Saved! 🙏',
@@ -312,7 +284,6 @@ export const SessionExecutionScreen: React.FC = () => {
         [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
       );
     } catch (error) {
-      // Failed to save session
       Alert.alert(
         'Save Failed',
         'Unable to save your session. Please try again.',
@@ -337,7 +308,6 @@ export const SessionExecutionScreen: React.FC = () => {
           text: 'Exit',
           style: 'destructive',
           onPress: () => {
-            // Stop the timer
             if (intervalRef.current) {
               clearInterval(intervalRef.current);
             }
@@ -350,7 +320,6 @@ export const SessionExecutionScreen: React.FC = () => {
 
 
 
-    // Circular Progress Component
   const CircularProgress = ({ progress }: { progress: number }) => {
     const size = 280;
     const strokeWidth = 8;
@@ -368,7 +337,6 @@ export const SessionExecutionScreen: React.FC = () => {
         }}
       >
         <Svg width={size} height={size}>
-          {/* Background circle */}
           <Circle
             cx={center}
             cy={center}
@@ -377,7 +345,6 @@ export const SessionExecutionScreen: React.FC = () => {
             strokeWidth={strokeWidth}
             fill="none"
           />
-          {/* Progress circle */}
           <Circle
             cx={center}
             cy={center}
@@ -392,7 +359,6 @@ export const SessionExecutionScreen: React.FC = () => {
           />
         </Svg>
 
-                {/* Timer content */}
         <View style={{
           position: 'absolute',
           top: 0,
@@ -419,7 +385,6 @@ export const SessionExecutionScreen: React.FC = () => {
             minutes
           </Text>
 
-          {/* Play/Pause indicator */}
           <View style={{
             position: 'absolute',
             bottom: 20,
@@ -438,9 +403,7 @@ export const SessionExecutionScreen: React.FC = () => {
 
   return (
     <View className="flex-1" style={{ backgroundColor }}>
-      {/* Main Content */}
       <View className="flex-1">
-        {/* Header */}
         <View className="flex-row items-center justify-between pt-16 pb-8 px-8">
           <TouchableOpacity onPress={handleExitSession}>
             <Ionicons name="home" size={32} color={accentColor} />
@@ -451,7 +414,6 @@ export const SessionExecutionScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Main Timer Display */}
         <View className="flex-1 items-center justify-center">
           <TouchableOpacity
             onPress={handlePlayPause}
@@ -462,7 +424,6 @@ export const SessionExecutionScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Skip Button */}
         <View className="items-center pb-16 px-8">
           <TouchableOpacity
             onPress={handleSkipTimer}
@@ -480,7 +441,6 @@ export const SessionExecutionScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Side Panel Overlay */}
       {showSidePanel && (
         <TouchableOpacity
           style={{
@@ -496,7 +456,6 @@ export const SessionExecutionScreen: React.FC = () => {
         />
       )}
 
-      {/* Side Panel */}
       <Animated.View
         style={{
           position: 'absolute',
@@ -521,7 +480,6 @@ export const SessionExecutionScreen: React.FC = () => {
         }}
       >
         <ScrollView className="flex-1 pt-16 px-6">
-          {/* Timers Left Section */}
           <View className="mb-8">
             <Text className="text-lg font-zen mb-4" style={{ color: textColor }}>
               timers left
@@ -565,7 +523,6 @@ export const SessionExecutionScreen: React.FC = () => {
             ))}
           </View>
 
-          {/* Sound Section */}
           <View className="mb-8">
             <Text className="text-lg font-zen mb-4" style={{ color: textColor }}>
               sound
@@ -595,7 +552,6 @@ export const SessionExecutionScreen: React.FC = () => {
           </View>
         </ScrollView>
 
-        {/* Side Panel Back Button */}
         <View className="p-6 pb-16">
           <TouchableOpacity
             onPress={closeSidePanel}
@@ -607,7 +563,6 @@ export const SessionExecutionScreen: React.FC = () => {
         </View>
       </Animated.View>
 
-      {/* Session Completion Celebration */}
       {showCompletion && (
         <View
           style={{
@@ -621,7 +576,6 @@ export const SessionExecutionScreen: React.FC = () => {
             backgroundColor: backgroundColor,
           }}
         >
-          {/* Expanding Circle Animation */}
           <Animated.View
             style={{
               width: 60,
@@ -632,18 +586,17 @@ export const SessionExecutionScreen: React.FC = () => {
                 {
                   scale: completionAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [1, 20], // Expands 20x from original size
+                    outputRange: [1, 20],
                   }),
                 },
               ],
               opacity: completionAnim.interpolate({
                 inputRange: [0, 0.7, 1],
-                outputRange: [0.8, 0.3, 0.1], // Fades as it expands
+                outputRange: [0.8, 0.3, 0.1],
               }),
             }}
           />
 
-          {/* Gratitude Message */}
           <Animated.View
             style={{
               position: 'absolute',
@@ -688,7 +641,6 @@ export const SessionExecutionScreen: React.FC = () => {
               Take a moment to rest in stillness and gratitude for your practice
             </Text>
 
-            {/* Save Session Options */}
             {showSaveOptions && (
               <View style={{ width: '100%', alignItems: 'center', paddingHorizontal: 32 }}>
                 <Text
