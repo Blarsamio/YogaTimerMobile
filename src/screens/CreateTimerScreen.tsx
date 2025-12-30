@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, FlatList, Text, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { H1, Button, BackButton } from '../components/ui';
@@ -304,6 +305,23 @@ export const CreateTimerScreen: React.FC = () => {
           saveSelectedSoundToStorage(sound);
         }}
       />
+
+      {/* Floating Action Button for adding timers */}
+      <TouchableOpacity
+        onPress={() => setIsTimerModalOpen(true)}
+        className="absolute right-6 w-14 h-14 rounded-full bg-accent items-center justify-center shadow-lg z-50"
+        style={{
+          bottom: timers.length > 0 ? 100 : 40,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4.65,
+          elevation: 8,
+        }}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={32} color="white" />
+      </TouchableOpacity>
 
       <IntermissionModal
         isOpen={isIntermissionModalOpen}

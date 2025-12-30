@@ -13,7 +13,7 @@ export const useSessions = () => {
   });
 };
 
-export const useSession = (id: number) => {
+export const useSession = (id: number | string) => {
   return useQuery({
     queryKey: ['sessions', id],
     queryFn: async () => {
@@ -42,7 +42,7 @@ export const useCreateSession = () => {
 export const useDeleteSession = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: number | string) => {
       const { error } = await ApiService.deleteSession(id);
       if (error) throw new Error(error);
     },

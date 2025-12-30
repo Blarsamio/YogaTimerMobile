@@ -68,9 +68,7 @@ export const SessionShow: React.FC = () => {
   const fetchAsanas = async () => {
     try {
       const response = await ApiService.getAsanas();
-      if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        setAsanas(response.data.data);
-      } else if (response.data && Array.isArray(response.data)) {
+      if (response.data && Array.isArray(response.data)) {
         setAsanas(response.data);
       } else {
         console.warn('Asanas data is not an array:', response);
@@ -110,7 +108,7 @@ export const SessionShow: React.FC = () => {
     }
   };
 
-  const handleDeleteTimer = async (timerId: number) => {
+  const handleDeleteTimer = async (timerId: number | string) => {
     Alert.alert(
       'Delete Timer',
       'Are you sure you want to remove this timer from the session?',
@@ -307,7 +305,7 @@ export const SessionShow: React.FC = () => {
               </View>
             </View>
           ) : (
-            <View className="space-y-3">
+            <View className="gap-3">
                              {session.timers.map((timer, index) => (
                  <TouchableOpacity
                    key={timer.id}

@@ -17,6 +17,7 @@ export const Timer: React.FC<TimerProps> = ({ duration, title }) => {
       player.seekTo(0);
       player.play();
     } catch (error) {
+      // Error playing sound
     }
   }
 

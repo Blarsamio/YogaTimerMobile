@@ -23,7 +23,7 @@ export const SessionsScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('Home');
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number | string) => {
     Alert.alert(
       'Delete Session',
       'Are you sure you want to delete this yoga session? This action cannot be undone.',

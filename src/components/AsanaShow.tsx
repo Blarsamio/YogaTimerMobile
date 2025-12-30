@@ -32,32 +32,30 @@ export const AsanaShow: React.FC = () => {
   const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
   const accentColor = '#A99985';
 
-    useEffect(() => {
-    const fetchAsana = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await ApiService.getAsana(asanaId);
+  const fetchAsana = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await ApiService.getAsana(asanaId);
 
-        if (response.error) {
-          throw new Error(response.error);
-        }
-
-        if (response.data && response.data.data) {
-          setAsana(response.data.data);
-        } else if (response.data) {
-          setAsana(response.data);
-        } else {
-          setError('Asana details not available');
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load asana details');
-        // Error fetching asana
-      } finally {
-        setLoading(false);
+      if (response.error) {
+        throw new Error(response.error);
       }
-    };
 
+      if (response.data) {
+        setAsana(response.data);
+      } else {
+        setError('Asana details not available');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load asana details');
+      // Error fetching asana
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAsana();
   }, [asanaId]);
 

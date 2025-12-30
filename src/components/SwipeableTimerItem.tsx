@@ -99,7 +99,7 @@ export const SwipeableTimerItem = React.memo(({
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[animatedStyle]}>
           <TouchableOpacity
-            className="bg-surface dark:bg-[#1C1C1C] border border-accent/30 rounded-full py-4 px-6"
+            className="bg-surface dark:bg-[#1C1C1C] border border-accent/30 rounded-2xl py-4 px-6"
             activeOpacity={0.7}
           >
             <Text

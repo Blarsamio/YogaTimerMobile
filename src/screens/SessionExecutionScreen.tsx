@@ -126,11 +126,15 @@ export const SessionExecutionScreen: React.FC = () => {
   const handleTimerComplete = useCallback(async () => {
     try {
       if (transitionPlayer) {
-        if (transitionPlayer.playing) {
-          transitionPlayer.pause();
+        try {
+          if (transitionPlayer.playing) {
+            transitionPlayer.pause();
+          }
+          transitionPlayer.seekTo(0);
+          transitionPlayer.play();
+        } catch (error) {
+          console.log('Error controlling audio:', error);
         }
-        transitionPlayer.seekTo(0);
-        transitionPlayer.play();
       }
     } catch (error) {
       // Failed to play transition sound

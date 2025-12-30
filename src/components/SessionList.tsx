@@ -8,14 +8,14 @@ import { useTheme } from "../contexts/ThemeContext";
 import { ApiService } from "../config/api";
 
 type RootStackParamList = {
-  SessionDetail: { sessionId: number };
+  SessionDetail: { sessionId: number | string };
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface SessionListProps {
   sessions: Session[];
-  onDelete: (id: number) => void;
+  onDelete: (id: number | string) => void;
   onStartSession: (session: Session) => void;
 }
 
