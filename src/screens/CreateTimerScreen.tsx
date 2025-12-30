@@ -189,12 +189,20 @@ export const CreateTimerScreen: React.FC = () => {
     navigation.navigate('BackgroundMusic');
   };
 
-  const renderTimer = ({ item }: { item: Timer }) => (
+  const renderTimer = React.useCallback(({ item }: { item: Timer }) => (
     <SwipeableTimerItem
       item={item}
       onDelete={handleDeleteTimer}
     />
-  );
+  ), [handleDeleteTimer]);
+
+  const keyExtractor = React.useCallback((item: Timer) => item.id, []);
+
+  const getItemLayout = React.useCallback((data: any, index: number) => ({
+    length: 80, // Estimated height of item + margin
+    offset: 80 * index,
+    index,
+  }), []);
 
   return (
     <View className="flex-1 px-6 pt-16" style={{ backgroundColor }}>
@@ -259,9 +267,14 @@ export const CreateTimerScreen: React.FC = () => {
         <FlatList
           data={timers}
           renderItem={renderTimer}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
+          getItemLayout={getItemLayout}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ flexGrow: 1 }}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
         />
       </View>
 

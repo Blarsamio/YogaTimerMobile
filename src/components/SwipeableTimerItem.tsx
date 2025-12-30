@@ -26,10 +26,10 @@ interface SwipeableTimerItemProps {
   onDelete: (id: string) => void;
 }
 
-export const SwipeableTimerItem: React.FC<SwipeableTimerItemProps> = ({
+export const SwipeableTimerItem = React.memo(({
   item,
   onDelete,
-}) => {
+}: SwipeableTimerItemProps) => {
   const { isDark } = useTheme();
   const translateX = useSharedValue(0);
   const deleteOpacity = useSharedValue(1);
@@ -113,4 +113,4 @@ export const SwipeableTimerItem: React.FC<SwipeableTimerItemProps> = ({
       </GestureDetector>
     </View>
   );
-};
+});

@@ -47,7 +47,6 @@ export const ContactScreen: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Theme colors
   const backgroundColor = isDark ? '#1A1A1A' : '#F5F1ED';
   const surfaceColor = isDark ? '#2D2D2D' : '#FFFFFF';
   const textColor = isDark ? '#E8E3D8' : '#1C1C1C';
@@ -97,7 +96,6 @@ export const ContactScreen: React.FC = () => {
       // Simulate API call - in a real app, you'd send this to your backend
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Show success message
       Alert.alert(
         'Message Sent!',
         'Thank you for your message. We\'ll get back to you soon.',
@@ -109,7 +107,6 @@ export const ContactScreen: React.FC = () => {
         ]
       );
 
-      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -130,7 +127,6 @@ export const ContactScreen: React.FC = () => {
 
   const updateField = (field: keyof ContactFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -146,9 +142,9 @@ export const ContactScreen: React.FC = () => {
         {/* Header */}
         <View className="flex-row items-center justify-between px-6 py-4">
           <BackButton onPress={() => navigation.goBack()} />
-          <H2 className="text-h3" style={{ color: textColor }}>
+          <H1 className="text-h1" style={{ color: textColor }}>
             Contact Us
-          </H2>
+          </H1>
           <View className="w-8" />
         </View>
 
@@ -159,17 +155,6 @@ export const ContactScreen: React.FC = () => {
         >
           {/* Introduction */}
           <View className="mb-8">
-            <View className="flex-row items-center mb-4">
-              <Ionicons
-                name="chatbubble-ellipses"
-                size={24}
-                color="#A99985"
-                style={{ marginRight: 8 }}
-              />
-              <H1 className="text-h2" style={{ color: textColor }}>
-                Get in Touch
-              </H1>
-            </View>
             <BodyText style={{ color: textColor, lineHeight: 24 }}>
               We&apos;d love to hear from you! Whether you have questions about the app,
               feedback, or need support with your yoga practice, we&apos;re here to help.
