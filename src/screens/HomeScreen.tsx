@@ -72,14 +72,11 @@ export const HomeScreen: React.FC = () => {
         >
           <View className="p-3 rounded-full bg-accent/10 mb-1">
             <Ionicons
-              name="help-circle"
+              name="mail-outline"
               size={24}
               color={moonColor}
             />
           </View>
-          <BodyText className="text-xs font-ubuntu-medium" style={{ color: moonColor }}>
-            Contact
-          </BodyText>
         </Pressable>
 
         <Pressable
@@ -94,9 +91,6 @@ export const HomeScreen: React.FC = () => {
               color={moonColor}
             />
           </View>
-          <BodyText className="text-xs font-ubuntu-medium" style={{ color: moonColor }}>
-            {isDark ? "Light" : "Dark"}
-          </BodyText>
         </Pressable>
       </View>
     </View>

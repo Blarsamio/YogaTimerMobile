@@ -200,7 +200,7 @@ export const CreateTimerScreen: React.FC = () => {
   const keyExtractor = React.useCallback((item: Timer) => item.id, []);
 
   const getItemLayout = React.useCallback((data: any, index: number) => ({
-    length: 80, // Estimated height of item + margin
+    length: 80,
     offset: 80 * index,
     index,
   }), []);
@@ -236,7 +236,7 @@ export const CreateTimerScreen: React.FC = () => {
               color: activeTab === 'timer' ? '#FFFFFF' : textColor
             }}
           >
-            timer
+            add timer
           </Text>
         </TouchableOpacity>
 
@@ -259,7 +259,7 @@ export const CreateTimerScreen: React.FC = () => {
               color: activeTab === 'sound' ? '#FFFFFF' : textColor
             }}
           >
-            sound
+            change alert
           </Text>
         </TouchableOpacity>
       </View>
