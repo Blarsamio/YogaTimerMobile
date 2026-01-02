@@ -6,6 +6,7 @@ export interface Session {
   created_at: string;
   updated_at: string;
   timers: Timer[];
+  device_id?: string;
 }
 
 export interface Timer {

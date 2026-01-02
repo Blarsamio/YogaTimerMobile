@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TouchableOpacity, ScrollView, Text, Alert } from 'react-native';
+import { View, TouchableOpacity, ScrollView, Text, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Session, Asana, Timer } from '../types';
@@ -8,6 +8,7 @@ import { H1, BackButton } from './ui';
 import { Loading } from './common/Loading';
 import { useTheme } from '../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useDeviceUser } from '../hooks/useDeviceUser';
 
 type RootStackParamList = {
   Home: undefined;
@@ -31,6 +32,13 @@ export const SessionShow: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [asanas, setAsanas] = useState<Asana[]>([]);
+  const { deviceId } = useDeviceUser();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [editedDescription, setEditedDescription] = useState('');
+  const [editedTimers, setEditedTimers] = useState<Timer[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const sessionId = (route.params as { sessionId: number }).sessionId;
 
@@ -56,6 +64,9 @@ export const SessionShow: React.FC = () => {
 
       if (response.data) {
         setSession(response.data);
+        setEditedName(response.data.name);
+        setEditedDescription(response.data.description || '');
+        setEditedTimers(response.data.timers);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load session');
@@ -143,6 +154,65 @@ export const SessionShow: React.FC = () => {
     );
   };
 
+  const initEdit = () => {
+    if (!session) return;
+    setIsEditing(true);
+    setEditedName(session.name);
+    setEditedDescription(session.description || '');
+    setEditedTimers(JSON.parse(JSON.stringify(session.timers))); // Deep copy
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    if (session) {
+      setEditedName(session.name);
+      setEditedDescription(session.description || '');
+      setEditedTimers(session.timers);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!session || !session.id) return;
+    if (!editedName.trim()) {
+      Alert.alert('Error', 'Session name cannot be empty');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const response = await ApiService.updateSession(session.id, {
+        name: editedName,
+        description: editedDescription,
+        deviceId: deviceId || undefined, // Send verification
+        timers: editedTimers.map(t => ({
+          id: t.id,
+          title: t.title,
+          duration: t.duration // Ensure duration is included even if not edited
+        }))
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (response.data) {
+        setSession(response.data);
+        setIsEditing(false);
+        Alert.alert('Success', 'Session updated successfully');
+      }
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update session');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const updateTimerTitle = (index: number, title: string) => {
+    const updated = [...editedTimers];
+    updated[index].title = title;
+    setEditedTimers(updated);
+  };
+
   const handleStartSession = () => {
     if (!session) return;
 
@@ -159,7 +229,7 @@ export const SessionShow: React.FC = () => {
   };
 
   const getTotalDuration = () => {
-    if (!session) return 0;
+    if (!session || !session.timers) return 0;
     return session.timers.reduce((total, timer) => total + timer.duration, 0);
   };
 
@@ -233,13 +303,37 @@ export const SessionShow: React.FC = () => {
       {/* Header with back button */}
       <View className="flex-row items-center mb-8 px-6 pt-16">
         <BackButton onPress={handleBack} />
-        <View className="flex-1 ml-4">
+        <View className="flex-1 ml-4 flex-row justify-between items-center">
           <H1 className="text-h1" style={{ color: textColor }}>
-            session details
+            {isEditing ? 'edit session' : 'session details'}
           </H1>
+
+          {!isEditing && session.device_id === deviceId && (
+             <TouchableOpacity onPress={initEdit} className="p-2">
+               <Text className="text-accent font-zen">Edit</Text>
+             </TouchableOpacity>
+          )}
+
+          {isEditing && (
+            <View className="flex-row gap-4">
+              <TouchableOpacity onPress={cancelEdit} disabled={isSaving}>
+                <Text className="text-gray-400 font-zen">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveEdit} disabled={isSaving}>
+                <Text className="text-accent font-bold font-zen">{isSaving ? '...' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
 
+
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
       <ScrollView
         className="flex-1 px-6"
         showsVerticalScrollIndicator={false}
@@ -250,17 +344,44 @@ export const SessionShow: React.FC = () => {
           className="p-6 rounded-3xl mb-6 shadow-sm"
           style={{ backgroundColor: cardBgColor }}
         >
-          <H1 className="text-2xl font-zen mb-3" style={{ color: textColor }}>
-            {session.name}
-          </H1>
+          {isEditing ? (
+             <View>
+               <Text className="text-xs opacity-50 mb-1" style={{ color: textColor }}>SESSION NAME</Text>
+               <TextInput
+                 value={editedName}
+                 onChangeText={setEditedName}
+                 className="text-2xl font-zen mb-4 border-b border-accent/20 pb-2"
+                 style={{ color: textColor }}
+                 placeholder="Session Name"
+                 placeholderTextColor="#999"
+               />
 
-          {session.description && (
-            <Text
-              className="text-base leading-6 mb-4 opacity-80"
-              style={{ color: textColor }}
-            >
-              {session.description}
-            </Text>
+               <Text className="text-xs opacity-50 mb-1" style={{ color: textColor }}>DESCRIPTION</Text>
+               <TextInput
+                 value={editedDescription}
+                 onChangeText={setEditedDescription}
+                 className="text-base mb-4 border-b border-accent/20 pb-2 leading-6"
+                 style={{ color: textColor }}
+                 placeholder="Add a description..."
+                 placeholderTextColor="#999"
+                 multiline
+               />
+             </View>
+          ) : (
+            <>
+              <H1 className="text-2xl font-zen mb-3" style={{ color: textColor }}>
+                {session.name}
+              </H1>
+
+              {session.description && (
+                <Text
+                  className="text-base leading-6 mb-4 opacity-80"
+                  style={{ color: textColor }}
+                >
+                  {session.description}
+                </Text>
+              )}
+            </>
           )}
 
           <View className="flex-row items-center">
@@ -280,7 +401,7 @@ export const SessionShow: React.FC = () => {
             list of asanas
           </Text>
 
-          {session.timers.length === 0 ? (
+          {(!session.timers || session.timers.length === 0) ? (
             <View
               className="p-6 rounded-2xl border border-dashed"
               style={{
@@ -306,7 +427,34 @@ export const SessionShow: React.FC = () => {
             </View>
           ) : (
             <View className="gap-3">
-                             {session.timers.map((timer, index) => (
+                             {isEditing
+                ? editedTimers.map((timer, index) => (
+                    <View
+                      key={timer.id}
+                      className="bg-white/50 rounded-2xl overflow-hidden mb-3"
+                      style={{ backgroundColor: cardBgColor }}
+                    >
+                      <View className="flex-row items-center p-4">
+                        <View className="w-8 h-8 rounded-full bg-accent items-center justify-center mr-4">
+                         <Text className="text-white font-zen text-sm">
+                           {index + 1}
+                         </Text>
+                       </View>
+
+                        <View className="flex-1">
+                          <Text className="text-xs opacity-50 mb-1" style={{ color: textColor }}>POSE NAME</Text>
+                          <TextInput
+                            value={timer.title}
+                            onChangeText={(text) => updateTimerTitle(index, text)}
+                            className="font-zen text-base border-b border-accent/20 pb-1"
+                            style={{ color: textColor }}
+                            placeholder="Pose Name"
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  ))
+                : session.timers.map((timer, index) => (
                  <TouchableOpacity
                    key={timer.id}
                    onPress={() => handleTimerPress(timer)}
@@ -349,7 +497,7 @@ export const SessionShow: React.FC = () => {
       </ScrollView>
 
       {/* Start Session Button - Fixed at bottom */}
-      {session.timers.length > 0 && (
+      {session.timers && session.timers.length > 0 && (
         <View
           className="px-6 pb-8 pt-4"
           style={{
@@ -372,6 +520,7 @@ export const SessionShow: React.FC = () => {
           </TouchableOpacity>
         </View>
       )}
+      </KeyboardAvoidingView>
     </View>
   );
 };

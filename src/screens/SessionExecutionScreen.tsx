@@ -8,6 +8,7 @@ import { ApiService } from '../config/api';
 import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
+import { useDeviceUser } from '../hooks/useDeviceUser';
 
 type SessionExecutionRouteProp = RouteProp<RootStackParamList, 'SessionExecution'>;
 
@@ -38,6 +39,7 @@ export const SessionExecutionScreen: React.FC = () => {
   const [showSaveOptions, setShowSaveOptions] = useState(false);
   const [sessionName, setSessionName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const { deviceId } = useDeviceUser();
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -260,6 +262,7 @@ export const SessionExecutionScreen: React.FC = () => {
       const sessionResponse = await ApiService.createSession({
         name: sessionName.trim(),
         description: 'Custom yoga session',
+        deviceId: deviceId || undefined,
         timers: executionState.session.timers.map(timer => ({
           title: timer.title,
           duration: timer.duration,

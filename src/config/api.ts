@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 // Development: Dynamically get IP from Expo config
 const getLocalIp = () => {
   const debuggerHost = Constants.expoConfig?.hostUri;
-  const localhost = '192.168.100.77'; // Fallback to last known good IP
+  const localhost = '192.168.1.21'; // Fallback to last known good IP
 
   if (debuggerHost) {
     return debuggerHost.split(':')[0];
@@ -100,13 +100,15 @@ export class ApiService {
     }
   }
 
-  static async createSession(sessionData: { name: string; description?: string, timers?: any[] }): Promise<ApiResponse<Session>> {
+  static async createSession(sessionData: { name: string; description?: string, timers?: any[], deviceId?: string }): Promise<ApiResponse<Session>> {
     try {
       const payload = {
         ...sessionData,
+        device_id: sessionData.deviceId,
         timers_attributes: sessionData.timers,
       };
       delete payload.timers;
+      delete payload.deviceId;
 
       const response = await this.fetchWithTimeout(endpoints.sessions, {
         method: 'POST',
@@ -124,14 +126,18 @@ export class ApiService {
     }
   }
 
-  static async updateSession(id: number | string, sessionData: { name?: string; description?: string }): Promise<ApiResponse<Session>> {
+  static async updateSession(id: number | string, sessionData: { name?: string; description?: string; deviceId?: string; timers?: any[] }): Promise<ApiResponse<Session>> {
     try {
       const response = await this.fetchWithTimeout(`${endpoints.sessions}/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(sessionData),
+        body: JSON.stringify({
+          ...sessionData,
+          device_id: sessionData.deviceId,
+          timers_attributes: sessionData.timers,
+        }),
       });
       return this.handleResponse<Session>(response);
     } catch (error) {

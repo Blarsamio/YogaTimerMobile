@@ -30,7 +30,7 @@ export const useSession = (id: number | string) => {
 export const useCreateSession = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (sessionData: { name: string; description?: string }) => {
+    mutationFn: async (sessionData: { name: string; description?: string; deviceId?: string; timers?: any[] }) => {
       const { data, error } = await ApiService.createSession(sessionData);
       if (error) throw new Error(error);
       return data;
