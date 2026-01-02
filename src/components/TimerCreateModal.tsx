@@ -214,7 +214,7 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
           accessibilityRole="button"
         >
           <Text className="text-white text-lg font-ubuntu-medium">
-            Add Timer
+            add
           </Text>
         </TouchableOpacity>
       </View>

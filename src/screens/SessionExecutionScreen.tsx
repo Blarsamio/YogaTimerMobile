@@ -137,7 +137,6 @@ export const SessionExecutionScreen: React.FC = () => {
         }
       }
     } catch (error) {
-      // Failed to play transition sound
       console.log('Error playing sound:', error);
     }
 
@@ -261,25 +260,14 @@ export const SessionExecutionScreen: React.FC = () => {
       const sessionResponse = await ApiService.createSession({
         name: sessionName.trim(),
         description: 'Custom yoga session',
+        timers: executionState.session.timers.map(timer => ({
+          title: timer.title,
+          duration: timer.duration,
+        })),
       });
 
       if (sessionResponse.error || !sessionResponse.data) {
         throw new Error(sessionResponse.error || 'Failed to create session');
-      }
-
-      const createdSession = sessionResponse.data;
-
-      const timerPromises = executionState.session.timers.map(timer =>
-        ApiService.createTimer(createdSession.id, {
-          title: timer.title,
-          duration: timer.duration,
-        })
-      );
-
-      const timerResults = await Promise.all(timerPromises);
-
-      const failedTimers = timerResults.filter(result => result.error);
-      if (failedTimers.length > 0) {
       }
 
       Alert.alert(
@@ -288,6 +276,7 @@ export const SessionExecutionScreen: React.FC = () => {
         [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
       );
     } catch (error) {
+      console.error('Session save failed:', error);
       Alert.alert(
         'Save Failed',
         'Unable to save your session. Please try again.',

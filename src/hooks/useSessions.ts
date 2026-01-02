@@ -8,7 +8,9 @@ export const useSessions = () => {
     queryFn: async () => {
       const { data, error } = await ApiService.getSessions();
       if (error) throw new Error(error);
-      return data || [];
+      return (data || []).sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     },
   });
 };

@@ -1,9 +1,20 @@
 import { Session, Timer, Asana, ApiResponse } from '../types';
+import Constants from 'expo-constants';
 
 // Configuration for API endpoints
-// Development: Change LOCAL_IP to your machine's IP address when testing on physical devices
-// Example: const LOCAL_IP = '192.168.1.100'; for network access from mobile devices
-const LOCAL_IP = '192.168.100.83';
+// Development: Dynamically get IP from Expo config
+const getLocalIp = () => {
+  const debuggerHost = Constants.expoConfig?.hostUri;
+  const localhost = '192.168.100.77'; // Fallback to last known good IP
+
+  if (debuggerHost) {
+    return debuggerHost.split(':')[0];
+  }
+
+  return localhost;
+};
+
+const LOCAL_IP = getLocalIp();
 
 const ENV = {
   dev: `http://${LOCAL_IP}:3000`,
@@ -21,7 +32,7 @@ export const endpoints = {
 
 // API Service Class
 export class ApiService {
-  private static readonly TIMEOUT_MS = 10000;
+  private static readonly TIMEOUT_MS = 30000;
 
   private static async fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
     const controller = new AbortController();
@@ -89,14 +100,20 @@ export class ApiService {
     }
   }
 
-  static async createSession(sessionData: { name: string; description?: string }): Promise<ApiResponse<Session>> {
+  static async createSession(sessionData: { name: string; description?: string, timers?: any[] }): Promise<ApiResponse<Session>> {
     try {
+      const payload = {
+        ...sessionData,
+        timers_attributes: sessionData.timers,
+      };
+      delete payload.timers;
+
       const response = await this.fetchWithTimeout(endpoints.sessions, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(sessionData),
+        body: JSON.stringify({ session: payload }),
       });
       return this.handleResponse<Session>(response);
     } catch (error) {
