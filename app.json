@@ -32,7 +32,14 @@
       }
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png",
+      "name": "Yoga Timer Mobile",
+      "shortName": "YogaTimer",
+      "display": "standalone",
+      "backgroundColor": "#F5F5F5",
+      "themeColor": "#F5F5F5",
+      "startUrl": "/"
     }
   }
 }

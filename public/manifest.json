@@ -1,0 +1,26 @@
+{
+  "short_name": "YogaTimer",
+  "name": "Yoga Timer Mobile",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#F5F5F5",
+  "background_color": "#F5F5F5",
+  "orientation": "portrait"
+}

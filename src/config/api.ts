@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 // Development: Dynamically get IP from Expo config
 const getLocalIp = () => {
   const debuggerHost = Constants.expoConfig?.hostUri;
-  const localhost = '192.168.1.21'; // Fallback to last known good IP
+  const localhost = '192.168.100.92'; // Fallback to last known good IP
 
   if (debuggerHost) {
     return debuggerHost.split(':')[0];
