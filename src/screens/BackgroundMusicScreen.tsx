@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Text, ScrollView, Dimensions, Image } from 'react-native';
+import { View, TouchableOpacity, Text, ScrollView, Dimensions, Image, Modal, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BackButton } from '../components/ui';
@@ -8,6 +8,8 @@ import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudioPlayer } from 'expo-audio';
+import { ApiService } from '../config/api';
+import { useDeviceUser } from '../hooks/useDeviceUser';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -78,7 +80,13 @@ export const BackgroundMusicScreen: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timers, setTimers] = useState<Timer[]>([]);
   const [selectedSound, setSelectedSound] = useState('bowl');
+
   const [previewPlaying, setPreviewPlaying] = useState<string | null>(null);
+
+  const [saveModalVisible, setSaveModalVisible] = useState(false);
+  const [sessionName, setSessionName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const { deviceId } = useDeviceUser();
 
   const previewPlayer = useAudioPlayer(require('../../assets/audio/bowl.wav'));
 
@@ -216,6 +224,49 @@ export const BackgroundMusicScreen: React.FC = () => {
       transitionSound: selectedSound,
       backgroundMusic: noBackgroundMusic ? undefined : (selectedMusicId ?? undefined),
     });
+  };
+
+  const handleSaveSession = async () => {
+    if (!sessionName.trim()) {
+      Alert.alert('Session Name Required', 'Please enter a name for your session.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const sessionResponse = await ApiService.createSession({
+        name: sessionName.trim(),
+        description: 'Custom yoga session',
+        deviceId: deviceId || undefined,
+        timers: timers.map(timer => ({
+          title: timer.label,
+          duration: timer.duration * 60,
+        })),
+      });
+
+      if (sessionResponse.error || !sessionResponse.data) {
+        throw new Error(sessionResponse.error || 'Failed to create session');
+      }
+
+      // Clear local session data
+      await clearSessionData();
+
+      setSaveModalVisible(false);
+      Alert.alert(
+        'Session Saved! 🙏',
+        `"${sessionName}" has been added to your session library.`,
+        [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
+      );
+    } catch (error) {
+      console.error('Session save failed:', error);
+      Alert.alert(
+        'Save Failed',
+        'Unable to save your session. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const renderMusicCard = (track: BackgroundMusicTrack, index: number) => {
@@ -364,7 +415,7 @@ export const BackgroundMusicScreen: React.FC = () => {
 
       <View className="flex-row gap-4 pb-8">
         <TouchableOpacity
-          onPress={handleBack}
+          onPress={() => setSaveModalVisible(true)}
           className="flex-1 py-4 px-6 rounded-full border border-accent/50"
           activeOpacity={0.8}
         >
@@ -372,7 +423,7 @@ export const BackgroundMusicScreen: React.FC = () => {
             className="text-center text-lg font-ubuntu-medium"
             style={{ color: textColor }}
           >
-            ◀ back
+            save
           </Text>
         </TouchableOpacity>
 
@@ -386,6 +437,74 @@ export const BackgroundMusicScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </View>
+
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={saveModalVisible}
+        onRequestClose={() => setSaveModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View className="flex-1 justify-center items-center bg-black/50 p-6">
+            <View
+              className="w-full max-w-sm rounded-3xl p-6"
+              style={{ backgroundColor: cardBgColor }}
+            >
+              <Text className="text-xl font-zen mb-2 text-center" style={{ color: textColor }}>
+                Save Session
+              </Text>
+              <Text className="text-sm opacity-70 mb-6 text-center" style={{ color: textColor }}>
+                Give your practice a name to save it to your library.
+              </Text>
+
+              <Text className="text-xs opacity-50 mb-1 ml-1" style={{ color: textColor }}>SESSION NAME</Text>
+              <TextInput
+                value={sessionName}
+                onChangeText={setSessionName}
+                placeholder="Ex: Morning Flow"
+                placeholderTextColor={isDark ? '#666' : '#999'}
+                className="w-full p-4 rounded-xl mb-6 text-lg font-zen border"
+                style={{
+                  backgroundColor: isDark ? '#2C2C2C' : '#F0F0F0',
+                  color: textColor,
+                  borderColor: 'transparent'
+                }}
+                autoFocus
+              />
+
+              <View className="flex-row gap-4">
+                <TouchableOpacity
+                  onPress={() => setSaveModalVisible(false)}
+                  className="flex-1 py-3 rounded-full border border-gray-500/30"
+                  disabled={isSaving}
+                >
+                  <Text className="text-center font-ubuntu-medium" style={{ color: textColor }}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleSaveSession}
+                  className="flex-1 py-3 rounded-full bg-accent items-center justify-center"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text className="text-center font-ubuntu-medium text-white">
+                      Save
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
