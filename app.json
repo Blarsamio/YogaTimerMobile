@@ -34,7 +34,7 @@
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png",
-      "name": "Yoga Timer Mobile",
+      "name": "Yoga Timer — Yin Yoga Session & Pose Practice",
       "shortName": "YogaTimer",
       "display": "standalone",
       "backgroundColor": "#F5F5F5",
