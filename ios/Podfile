@@ -50,6 +50,15 @@ target 'YogaTimerMobile' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
+    # Xcode 26 rejects fmt 11.0.2's consteval format strings under C++20; fmt skips consteval in C++17.
+    # ponytail: drop once React Native ships a fmt release that compiles on Xcode 26.
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'fmt'
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      end
+    end
+
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
     installer.target_installation_results.pod_target_installation_results

@@ -1,38 +1,47 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, ScrollView, Alert, Animated, TextInput } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useKeepAwake } from 'expo-keep-awake';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAudioPlayer, AudioModule } from 'expo-audio';
-import { SessionExecutionState } from '../types';
 import { ApiService } from '../config/api';
 import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useDeviceUser } from '../hooks/useDeviceUser';
+import {
+  buildSegments, positionAt, startOf, elapsedSeconds, pause, resume, seekTo, formatClock, Clock,
+} from '../practice/segments';
 
 type SessionExecutionRouteProp = RouteProp<RootStackParamList, 'SessionExecution'>;
 
 const { width: screenWidth } = Dimensions.get('window');
 
+const DEFAULT_REBOUND_SECONDS = 45;
+// One in-progress run, so a killed app resumes where it was.
+const RUN_STORAGE_KEY = 'practice_run';
+
+// "Shoelace · left", but not "Bananasana to the left · left".
+const sideLabel = (segment: { title: string; side: string | null }) =>
+  segment.side && !segment.title.toLowerCase().includes(segment.side) ? ` · ${segment.side}` : '';
+
 export const SessionExecutionScreen: React.FC = () => {
   const route = useRoute<SessionExecutionRouteProp>();
   const navigation = useNavigation();
   const { isDark } = useTheme();
+  useKeepAwake(); // Screen stays on for the whole practice; released when the screen unmounts.
 
-  const { session, transitionSound, backgroundMusic } = route.params;
+  const { session } = route.params;
 
-  const [executionState, setExecutionState] = useState<SessionExecutionState>({
-    session,
-    currentTimerIndex: 0,
-    isPlaying: false,
-    isPaused: false,
-    currentTimerElapsed: 0,
-    totalElapsed: 0,
-    transitionSound,
-    backgroundMusic,
-  });
+  const segments = useMemo(() => {
+    const ordered = [...session.timers].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    return buildSegments(ordered, session.rebound_seconds ?? DEFAULT_REBOUND_SECONDS);
+  }, [session]);
 
-  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [clock, setClock] = useState<Clock | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [showSidePanel, setShowSidePanel] = useState(false);
   const [selectedSoundIndex, setSelectedSoundIndex] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
@@ -41,10 +50,10 @@ export const SessionExecutionScreen: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const { deviceId } = useDeviceUser();
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const completionAnim = useRef(new Animated.Value(0)).current;
   const completionOpacity = useRef(new Animated.Value(0)).current;
+  const previousIndex = useRef<number | null>(null);
 
   const availableSounds = [
     { id: 'bowl', name: 'Singing Bowl' },
@@ -62,10 +71,54 @@ export const SessionExecutionScreen: React.FC = () => {
   const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
   const accentColor = '#A99985';
 
-  const currentTimer = executionState.session.timers[executionState.currentTimerIndex];
-  const isLastTimer = executionState.currentTimerIndex === executionState.session.timers.length - 1;
+  // Position is derived from timestamps, never from counting ticks, so it can't drift.
+  const elapsed = clock ? elapsedSeconds(clock, now) : 0;
+  const position = positionAt(segments, elapsed);
+  const currentSegment = segments[position.index];
+  const nextSegment = segments[position.index + 1];
+  const isPaused = !!clock?.pausedAt;
+  const circularProgress = currentSegment ? 1 - position.remaining / currentSegment.duration : 1;
 
-  const circularProgress = currentTimer ? (1 - (timeRemaining / currentTimer.duration)) : 0;
+  const updateClock = useCallback((next: Clock) => {
+    setClock(next);
+    setNow(Date.now());
+    AsyncStorage.setItem(RUN_STORAGE_KEY, JSON.stringify({ sessionId: session.id, ...next })).catch(() => {});
+  }, [session.id]);
+
+  const clearRun = () => AsyncStorage.removeItem(RUN_STORAGE_KEY).catch(() => {});
+
+  // Start, or resume a run of this same session that the OS killed.
+  useEffect(() => {
+    (async () => {
+      try {
+        await AudioModule.setAudioModeAsync({
+          playsInSilentMode: true,
+          shouldPlayInBackground: true,
+          interruptionMode: 'mixWithOthers',
+        });
+      } catch (error) {
+        console.log('Error configuring audio:', error);
+      }
+
+      let resumed: Clock | null = null;
+      try {
+        const stored = JSON.parse((await AsyncStorage.getItem(RUN_STORAGE_KEY)) ?? 'null');
+        if (stored?.sessionId === session.id && !positionAt(segments, elapsedSeconds(stored, Date.now())).done) {
+          resumed = { startedAt: stored.startedAt, pausedAt: stored.pausedAt, pausedMs: stored.pausedMs };
+        }
+      } catch {
+        // Corrupt or unavailable storage: start fresh.
+      }
+      updateClock(resumed ?? { startedAt: Date.now(), pausedAt: null, pausedMs: 0 });
+    })();
+  }, [session.id, segments, updateClock]);
+
+  // Re-render a few times a second; the tick only refreshes the display.
+  useEffect(() => {
+    if (!clock || isPaused || position.done) return;
+    const interval = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(interval);
+  }, [clock, isPaused, position.done]);
 
   const toggleSidePanel = () => {
     const toValue = showSidePanel ? 0 : 1;
@@ -88,8 +141,18 @@ export const SessionExecutionScreen: React.FC = () => {
     }
   };
 
+  const playBell = useCallback(() => {
+    try {
+      if (transitionPlayer.playing) transitionPlayer.pause();
+      transitionPlayer.seekTo(0);
+      transitionPlayer.play();
+    } catch (error) {
+      console.log('Error playing sound:', error);
+    }
+  }, [transitionPlayer]);
+
   const handleSessionComplete = useCallback(() => {
-    setExecutionState(prev => ({ ...prev, isPlaying: false }));
+    clearRun();
     setShowCompletion(true);
 
     Animated.parallel([
@@ -106,123 +169,47 @@ export const SessionExecutionScreen: React.FC = () => {
     ]).start();
 
     setTimeout(() => {
-      const sessionId = executionState.session.id;
-      const sessionName = executionState.session.name;
+      const sessionId = session.id;
       const isCustomSession = !sessionId ||
                              sessionId.toString().startsWith('custom_') ||
-                             sessionName === 'Custom Practice' ||
+                             session.name === 'Custom Practice' ||
                              (typeof sessionId === 'number' && sessionId > 1000000000000);
 
       if (isCustomSession) {
-        const totalMinutes = executionState.session.timers.reduce((sum, timer) => sum + Math.ceil(timer.duration / 60), 0);
-        const timerCount = executionState.session.timers.length;
-        const defaultName = `My ${totalMinutes}-Minute Session (${timerCount} poses)`;
-        setSessionName(defaultName);
+        const totalMinutes = Math.round(segments.reduce((sum, segment) => sum + segment.duration, 0) / 60);
+        const poseCount = session.timers.length;
+        setSessionName(`My ${totalMinutes}-Minute Session (${poseCount} poses)`);
         setShowSaveOptions(true);
       } else {
         navigation.navigate('Home');
       }
     }, 3000);
-  }, [completionAnim, completionOpacity, navigation, executionState.session.id, executionState.session.timers, executionState.session.name]);
+  }, [completionAnim, completionOpacity, navigation, session, segments]);
 
-  const handleTimerComplete = useCallback(async () => {
-    try {
-      if (transitionPlayer) {
-        try {
-          if (transitionPlayer.playing) {
-            transitionPlayer.pause();
-          }
-          transitionPlayer.seekTo(0);
-          transitionPlayer.play();
-        } catch (error) {
-          console.log('Error controlling audio:', error);
-        }
-      }
-    } catch (error) {
-      console.log('Error playing sound:', error);
-    }
-
-    if (isLastTimer) {
-      handleSessionComplete();
-    } else {
-      setExecutionState(prev => ({
-        ...prev,
-        currentTimerIndex: prev.currentTimerIndex + 1,
-        currentTimerElapsed: 0,
-      }));
-
-      const nextTimer = executionState.session.timers[executionState.currentTimerIndex + 1];
-      setTimeRemaining(nextTimer?.duration || 0);
-    }
-  }, [isLastTimer, transitionPlayer, executionState.session.timers, executionState.currentTimerIndex, handleSessionComplete]);
-
+  // Cue every boundary once. After a long suspension several boundaries collapse into one bell.
   useEffect(() => {
-    const setupAudio = async () => {
-      try {
-        await AudioModule.setAudioModeAsync({
-          allowsRecording: false,
-          playsInSilentMode: true,
-        });
-      } catch (error) {
-        console.log('Error configuring audio:', error);
+    if (!clock) return;
+    const index = position.index;
+    if (previousIndex.current !== null && index !== previousIndex.current) {
+      playBell();
+      if (currentSegment?.kind === 'switch' || currentSegment?.side) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       }
-    };
-
-    setupAudio();
-    setTimeRemaining(currentTimer?.duration || 0);
-    setExecutionState(prev => ({ ...prev, isPlaying: true }));
-  }, [currentTimer?.duration]);
-
-  useEffect(() => {
-    if (executionState.isPlaying && !executionState.isPaused && currentTimer) {
-      intervalRef.current = setInterval(() => {
-        setExecutionState(prev => {
-          const newElapsed = prev.currentTimerElapsed + 1;
-          const newTimeRemaining = currentTimer.duration - newElapsed;
-
-          setTimeRemaining(newTimeRemaining);
-
-          if (newElapsed >= currentTimer.duration) {
-            handleTimerComplete();
-            return prev;
-          }
-
-          return {
-            ...prev,
-            currentTimerElapsed: newElapsed,
-            totalElapsed: prev.totalElapsed + 1,
-          };
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      if (position.done) handleSessionComplete();
     }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [executionState.isPlaying, executionState.isPaused, currentTimer, handleTimerComplete]);
+    previousIndex.current = index;
+  }, [clock, position.index, position.done, currentSegment, playBell, handleSessionComplete]);
 
   const handleSkipTimer = () => {
     Alert.alert(
-      'Skip Timer?',
-      'Are you sure you want to skip this pose?',
+      'Skip?',
+      `Skip ${currentSegment?.title ?? 'this segment'}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Skip',
           onPress: () => {
-            setExecutionState(prev => ({
-              ...prev,
-              currentTimerElapsed: 0,
-              totalElapsed: prev.totalElapsed + (currentTimer?.duration || 0) - prev.currentTimerElapsed,
-            }));
-            handleTimerComplete();
+            if (clock) updateClock(seekTo(clock, Date.now(), startOf(segments, position.index + 1)));
           },
         },
       ]
@@ -240,15 +227,8 @@ export const SessionExecutionScreen: React.FC = () => {
   };
 
   const handlePlayPause = () => {
-    setExecutionState(prev => {
-      const newIsPlaying = !prev.isPlaying;
-
-      return {
-        ...prev,
-        isPlaying: newIsPlaying,
-        isPaused: !newIsPlaying,
-      };
-    });
+    if (!clock) return;
+    updateClock(isPaused ? resume(clock, Date.now()) : pause(clock, Date.now()));
   };
 
   const handleSaveSession = async () => {
@@ -263,9 +243,15 @@ export const SessionExecutionScreen: React.FC = () => {
         name: sessionName.trim(),
         description: 'Custom yoga session',
         deviceId: deviceId || undefined,
-        timers: executionState.session.timers.map(timer => ({
+        rebound_seconds: session.rebound_seconds ?? DEFAULT_REBOUND_SECONDS,
+        timers: session.timers.map((timer, index) => ({
           title: timer.title,
           duration: timer.duration,
+          position: index + 1,
+          kind: timer.kind,
+          side: timer.side,
+          asana_id: timer.asana_id,
+          instruction: timer.instruction,
         })),
       });
 
@@ -304,17 +290,13 @@ export const SessionExecutionScreen: React.FC = () => {
           text: 'Exit',
           style: 'destructive',
           onPress: () => {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-            }
+            clearRun();
             navigation.navigate('Home');
           },
         },
       ]
     );
   };
-
-
 
   const CircularProgress = ({ progress }: { progress: number }) => {
     const size = 280;
@@ -364,21 +346,16 @@ export const SessionExecutionScreen: React.FC = () => {
           justifyContent: 'center',
           alignItems: 'center',
         }}>
-          <Text style={{
-            fontSize: 48,
-            fontFamily: 'zen',
-            color: accentColor,
-            marginBottom: 8,
-          }}>
-            {Math.ceil(timeRemaining / 60)}
-          </Text>
-          <Text style={{
-            fontSize: 24,
-            fontFamily: 'zen',
-            color: accentColor,
-            opacity: 0.7,
-          }}>
-            minutes
+          <Text
+            accessibilityLabel={`${formatClock(position.remaining)} remaining`}
+            style={{
+              fontSize: 56,
+              fontFamily: 'zen',
+              color: accentColor,
+              fontVariant: ['tabular-nums'],
+            }}
+          >
+            {formatClock(position.remaining)}
           </Text>
 
           <View style={{
@@ -387,7 +364,7 @@ export const SessionExecutionScreen: React.FC = () => {
             opacity: 0.4
           }}>
             <Ionicons
-              name={executionState.isPlaying ? "pause" : "play"}
+              name={isPaused ? "play" : "pause"}
               size={16}
               color={accentColor}
             />
@@ -410,14 +387,39 @@ export const SessionExecutionScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <View className="flex-1 items-center justify-center">
+        <View className="flex-1 items-center justify-center px-8">
+          <Text
+            accessibilityRole="header"
+            className="font-zen text-center"
+            style={{ color: textColor, fontSize: 28, marginBottom: 6 }}
+          >
+            {currentSegment ? `${currentSegment.title}${sideLabel(currentSegment)}` : ''}
+          </Text>
+          <Text
+            className="font-ubuntu text-center"
+            style={{ color: textColor, opacity: 0.6, fontSize: 15, minHeight: 20, marginBottom: 24 }}
+          >
+            {currentSegment?.instruction ?? ''}
+          </Text>
+
           <TouchableOpacity
             onPress={handlePlayPause}
             activeOpacity={0.8}
             style={{ borderRadius: 200 }}
+            accessibilityRole="button"
+            accessibilityLabel={isPaused ? 'Resume' : 'Pause'}
           >
             <CircularProgress progress={circularProgress} />
           </TouchableOpacity>
+
+          <Text
+            className="font-ubuntu text-center"
+            style={{ color: textColor, opacity: 0.6, fontSize: 15, marginTop: 24 }}
+          >
+            {nextSegment
+              ? `Next: ${nextSegment.title}${sideLabel(nextSegment)} · ${formatClock(nextSegment.duration)}`
+              : 'Last one'}
+          </Text>
         </View>
 
         <View className="items-center pb-16 px-8">
@@ -478,42 +480,42 @@ export const SessionExecutionScreen: React.FC = () => {
         <ScrollView className="flex-1 pt-16 px-6">
           <View className="mb-8">
             <Text className="text-lg font-zen mb-4" style={{ color: textColor }}>
-              timers left
+              sequence
             </Text>
 
-            {executionState.session.timers.map((timer, index) => (
+            {segments.map((segment, index) => (
               <View
-                key={timer.id}
+                key={index}
                 className={`px-4 py-3 rounded-full mb-2 ${
-                  index === executionState.currentTimerIndex
+                  index === position.index
                     ? 'bg-accent'
-                    : index < executionState.currentTimerIndex
+                    : index < position.index
                       ? 'bg-gray-300'
                       : 'bg-transparent border border-gray-300'
                 }`}
                 style={{
                   backgroundColor:
-                    index === executionState.currentTimerIndex
+                    index === position.index
                       ? accentColor
-                      : index < executionState.currentTimerIndex
+                      : index < position.index
                         ? (isDark ? '#6B7280' : '#D1D5DB')
                         : 'transparent',
-                  borderColor: index < executionState.currentTimerIndex ? 'transparent' : (isDark ? '#6B7280' : '#D1D5DB'),
-                  borderWidth: index >= executionState.currentTimerIndex ? 1 : 0,
+                  borderColor: index < position.index ? 'transparent' : (isDark ? '#6B7280' : '#D1D5DB'),
+                  borderWidth: index >= position.index ? 1 : 0,
                 }}
               >
                 <Text
                   className="text-center font-ubuntu-medium"
                   style={{
                     color:
-                      index === executionState.currentTimerIndex
+                      index === position.index
                         ? '#FFFFFF'
-                        : index < executionState.currentTimerIndex
+                        : index < position.index
                           ? (isDark ? '#9CA3AF' : '#6B7280')
                           : textColor,
                   }}
                 >
-                  {Math.ceil(timer.duration / 60)} minutes
+                  {segment.title}{sideLabel(segment)} · {formatClock(segment.duration)}
                 </Text>
               </View>
             ))}

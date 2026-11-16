@@ -8,6 +8,7 @@ export interface Session {
   timers: Timer[];
   device_id?: string;
   preset?: boolean; // Seeded flow: shared by all devices, not editable or deletable
+  rebound_seconds?: number; // Rest inserted between poses at runtime (0–300)
 }
 
 export interface Timer {
@@ -18,6 +19,9 @@ export interface Timer {
   asana_id?: number | null; // Library pose this timer holds (linked server-side by title)
   instruction?: string | null; // e.g. "Right leg forward"
   counterpose?: string | null;
+  position?: number;
+  kind?: 'pose' | 'rebound' | 'counterpose' | 'centering' | 'savasana' | 'closing';
+  side?: 'left' | 'right' | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,18 +43,6 @@ export interface Asana {
   similar_yang_asanas?: string;
   created_at: string;
   updated_at: string;
-}
-
-// Session execution state
-export interface SessionExecutionState {
-  session: Session;
-  currentTimerIndex: number;
-  isPlaying: boolean;
-  isPaused: boolean;
-  currentTimerElapsed: number; // seconds elapsed in current timer
-  totalElapsed: number; // total session elapsed time
-  backgroundMusic?: string;
-  transitionSound: string;
 }
 
 // Local timer for custom creation (before saving to backend)

@@ -13,6 +13,7 @@ interface IntermissionModalProps {
 const INTERMISSION_OPTIONS = [
   { duration: 0, label: 'None', icon: 'close-circle-outline' },
   { duration: 30, label: '30 seconds', icon: 'hourglass-outline' },
+  { duration: 45, label: '45 seconds', icon: 'hourglass-outline' },
   { duration: 60, label: '1 minute', icon: 'timer-outline' },
   { duration: 90, label: '1 minute 30 seconds', icon: 'watch-outline' },
   { duration: 120, label: '2 minutes', icon: 'alarm-outline' },
@@ -24,7 +25,7 @@ export const IntermissionModal: React.FC<IntermissionModalProps> = ({
   onSelectIntermission,
 }) => {
   const { isDark } = useTheme();
-  const [selectedDuration, setSelectedDuration] = useState<number>(0);
+  const [selectedDuration, setSelectedDuration] = useState<number>(45);
 
   const textColor = isDark ? '#F5F5F3' : '#1C1C1C';
   const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
@@ -58,13 +59,13 @@ export const IntermissionModal: React.FC<IntermissionModalProps> = ({
               className="text-xl font-zen text-center"
               style={{ color: textColor }}
             >
-              time between poses
+              rebound between poses
             </Text>
             <Text
               className="text-sm font-ubuntu opacity-70 text-center mt-2"
               style={{ color: textColor }}
             >
-              Add time to switch between poses
+              A rest after each pose to come out slowly. Sides of the same pose get a short switch instead.
             </Text>
           </View>
 
