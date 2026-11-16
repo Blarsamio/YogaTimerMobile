@@ -23,7 +23,7 @@ export const BackButton: React.FC<BackButtonProps> = ({
       <Ionicons
         name="arrow-back"
         size={size * 0.4}
-        color="white"
+        color="#17130F"
       />
     </TouchableOpacity>
   );

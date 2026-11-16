@@ -18,6 +18,11 @@ type RootStackParamList = {
     transitionSound: string;
     backgroundMusic?: string;
   };
+  SessionSummary: {
+    session: Session;
+    transitionSound: string;
+    backgroundMusic?: string;
+  };
   AsanaDetail: { asanaId: number };
 };
 
@@ -41,9 +46,9 @@ export const SessionShow: React.FC = () => {
 
   const sessionId = (route.params as { sessionId: number }).sessionId;
 
-  const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
-  const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
+  const backgroundColor = isDark ? '#17130F' : '#FAF7F2';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
+  const cardBgColor = isDark ? '#2A231C' : '#F5F1ED';
   const accentColor = '#A99985';
 
   useEffect(() => {
@@ -186,7 +191,7 @@ export const SessionShow: React.FC = () => {
     if (!session) return;
 
     // Navigate to session execution with default preferences
-    navigation.navigate('SessionExecution', {
+    navigation.navigate('SessionSummary', {
       session,
       transitionSound: 'bowl', // Default transition sound
       backgroundMusic: undefined, // No background music by default
@@ -243,7 +248,7 @@ export const SessionShow: React.FC = () => {
             className="bg-accent px-6 py-3 rounded-lg"
             activeOpacity={0.8}
           >
-            <Text className="text-white font-zen text-center">
+            <Text className="text-umber font-zen text-center">
               Try Again
             </Text>
           </TouchableOpacity>
@@ -286,7 +291,7 @@ export const SessionShow: React.FC = () => {
           {isEditing && (
             <View className="flex-row gap-4">
               <TouchableOpacity onPress={cancelEdit} disabled={isSaving}>
-                <Text className="text-gray-400 font-zen">Cancel</Text>
+                <Text className="text-muted font-zen">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSaveEdit} disabled={isSaving}>
                 <Text className="text-accent font-bold font-zen">{isSaving ? '...' : 'Save'}</Text>
@@ -322,7 +327,7 @@ export const SessionShow: React.FC = () => {
                  className="text-2xl font-zen mb-4 border-b border-accent/20 pb-2"
                  style={{ color: textColor }}
                  placeholder="Session Name"
-                 placeholderTextColor="#999"
+                 placeholderTextColor="#A89C8C"
                />
 
                <Text className="text-xs opacity-50 mb-1" style={{ color: textColor }}>DESCRIPTION</Text>
@@ -332,7 +337,7 @@ export const SessionShow: React.FC = () => {
                  className="text-base mb-4 border-b border-accent/20 pb-2 leading-6"
                  style={{ color: textColor }}
                  placeholder="Add a description..."
-                 placeholderTextColor="#999"
+                 placeholderTextColor="#A89C8C"
                  multiline
                />
              </View>
@@ -405,7 +410,7 @@ export const SessionShow: React.FC = () => {
                     >
                       <View className="flex-row items-center p-4">
                         <View className="w-8 h-8 rounded-full bg-accent items-center justify-center mr-4">
-                         <Text className="text-white font-zen text-sm">
+                         <Text className="text-umber font-zen text-sm">
                            {index + 1}
                          </Text>
                        </View>
@@ -433,7 +438,7 @@ export const SessionShow: React.FC = () => {
                  >
                   <View className="flex-row items-center p-4">
                     <View className="w-8 h-8 rounded-full bg-accent items-center justify-center mr-4">
-                      <Text className="text-white font-zen text-sm">
+                      <Text className="text-umber font-zen text-sm">
                         {index + 1}
                       </Text>
                     </View>
@@ -472,7 +477,7 @@ export const SessionShow: React.FC = () => {
           style={{
             backgroundColor: backgroundColor,
             borderTopWidth: 1,
-            borderTopColor: isDark ? '#3D3D3D' : '#E5E5E5',
+            borderTopColor: isDark ? '#2A231C' : '#E5E5E5',
           }}
         >
           <TouchableOpacity
@@ -481,8 +486,8 @@ export const SessionShow: React.FC = () => {
             activeOpacity={0.8}
           >
             <View className="flex-row items-center justify-center">
-              <Ionicons name="play" size={20} color="white" />
-              <Text className="text-white font-zen text-lg ml-3">
+              <Ionicons name="play" size={20} color="#17130F" />
+              <Text className="text-umber font-zen text-lg ml-3">
                 Begin Practice
               </Text>
             </View>

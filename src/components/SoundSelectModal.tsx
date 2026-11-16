@@ -41,9 +41,9 @@ export const SoundSelectModal: React.FC<SoundSelectModalProps> = ({
   const bowlPlayer = useAudioPlayer(SOUND_FILES.bowl);
   const currentPlayerRef = useRef<typeof bowlPlayer | null>(null);
 
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
-  const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
-  const optionBgColor = isDark ? '#2D2D2D' : '#FFFFFF';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
+  const cardBgColor = isDark ? '#2A231C' : '#F5F1ED';
+  const optionBgColor = isDark ? '#221D18' : '#FFFFFF';
 
   useEffect(() => {
     const configureAudio = async () => {
@@ -160,10 +160,10 @@ export const SoundSelectModal: React.FC<SoundSelectModalProps> = ({
                 key={sound.id}
                 onPress={() => handleSelectSound(sound.id)}
                 className={`rounded-2xl mb-3 overflow-hidden ${
-                  selectedSound === sound.id ? 'border-2 border-accent' : 'border border-accent/20'
+                  selectedSound === sound.id ? 'border-2 border-clay' : 'border border-accent/20'
                 }`}
                 style={{
-                  backgroundColor: selectedSound === sound.id ? '#A99985' : optionBgColor
+                  backgroundColor: selectedSound === sound.id ? '#C08A6A' : optionBgColor
                 }}
                 activeOpacity={0.8}
               >
@@ -171,12 +171,12 @@ export const SoundSelectModal: React.FC<SoundSelectModalProps> = ({
                   <View className="flex-row items-center">
                     {/* Icon */}
                     <View className={`w-14 h-14 rounded-full items-center justify-center mr-4 ${
-                      selectedSound === sound.id ? 'bg-white/20' : 'bg-accent/10'
+                      selectedSound === sound.id ? 'bg-umber/10' : 'bg-accent/10'
                     }`}>
                       <Ionicons
                         name={sound.icon as keyof typeof Ionicons.glyphMap}
                         size={24}
-                        color={selectedSound === sound.id ? 'white' : '#A99985'}
+                        color={selectedSound === sound.id ? '#17130F' : '#A99985'}
                       />
                     </View>
 
@@ -185,7 +185,7 @@ export const SoundSelectModal: React.FC<SoundSelectModalProps> = ({
                       <Text
                         className="text-lg font-ubuntu-medium mb-1"
                         style={{
-                          color: selectedSound === sound.id ? 'white' : textColor
+                          color: selectedSound === sound.id ? '#17130F' : textColor
                         }}
                       >
                         {sound.name}
@@ -193,7 +193,7 @@ export const SoundSelectModal: React.FC<SoundSelectModalProps> = ({
                       <Text
                         className="text-sm opacity-80"
                         style={{
-                          color: selectedSound === sound.id ? 'white' : textColor
+                          color: selectedSound === sound.id ? '#17130F' : textColor
                         }}
                       >
                         {sound.description}
@@ -208,14 +208,14 @@ export const SoundSelectModal: React.FC<SoundSelectModalProps> = ({
                           handlePreviewSound(sound.id);
                         }}
                         className={`w-12 h-12 rounded-full items-center justify-center ${
-                          selectedSound === sound.id ? 'bg-white/20' : 'bg-accent/10'
+                          selectedSound === sound.id ? 'bg-umber/10' : 'bg-accent/10'
                         }`}
                         activeOpacity={0.7}
                       >
                         <Ionicons
                           name={playingSound === sound.id ? "stop" : "play"}
                           size={18}
-                          color={selectedSound === sound.id ? 'white' : '#A99985'}
+                          color={selectedSound === sound.id ? '#17130F' : '#A99985'}
                         />
                       </TouchableOpacity>
                     )}
@@ -223,12 +223,12 @@ export const SoundSelectModal: React.FC<SoundSelectModalProps> = ({
                                         {/* Coming Soon indicator for sounds without files */}
                     {sound.id !== 'none' && !sound.file && (
                       <View className={`px-4 py-2 rounded-full ${
-                        selectedSound === sound.id ? 'bg-white/20' : 'bg-accent/10'
+                        selectedSound === sound.id ? 'bg-umber/10' : 'bg-accent/10'
                       }`}>
                         <Text
                           className="text-sm"
                           style={{
-                            color: selectedSound === sound.id ? 'white' : '#A99985'
+                            color: selectedSound === sound.id ? '#17130F' : '#A99985'
                           }}
                         >
                           soon
@@ -262,7 +262,7 @@ export const SoundSelectModal: React.FC<SoundSelectModalProps> = ({
           }}
           activeOpacity={0.8}
         >
-          <Text className="text-white text-lg font-ubuntu-medium">
+          <Text className="text-umber text-lg font-ubuntu-medium">
             Done
           </Text>
         </TouchableOpacity>

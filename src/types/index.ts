@@ -36,6 +36,9 @@ export interface Asana {
   meridians_and_organs?: string;
   joints?: string;
   recommended_time?: string;
+  min_seconds?: number | null; // Suggested hold range; the builder hints outside it, never blocks
+  max_seconds?: number | null;
+  default_seconds?: number | null;
   other_notes?: string;
   into_pose?: string;
   out_of_pose?: string;

@@ -98,3 +98,15 @@ export const formatClock = (seconds: number) => {
   const whole = Math.max(0, Math.ceil(seconds));
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 };
+
+// Sound/haptic role of the boundary that enters segment `index` (segments.length = finished).
+// A pose ending into a rebound is `rebound_start`; with rebound 0 it folds into the next `pose_start`.
+export type CueRole = 'session_start' | 'pose_start' | 'side_switch' | 'rebound_start' | 'session_end';
+
+export function cueRoleAt(segments: Segment[], index: number): CueRole {
+  if (index >= segments.length) return 'session_end';
+  if (index === 0) return 'session_start';
+  if (segments[index].kind === 'switch') return 'side_switch';
+  if (segments[index].kind === 'rebound') return 'rebound_start';
+  return 'pose_start';
+}

@@ -47,11 +47,11 @@ export const ContactScreen: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const backgroundColor = isDark ? '#1A1A1A' : '#F5F1ED';
-  const surfaceColor = isDark ? '#2D2D2D' : '#FFFFFF';
-  const textColor = isDark ? '#E8E3D8' : '#1C1C1C';
-  const placeholderColor = isDark ? '#A0A0A0' : '#6B7280';
-  const borderColor = isDark ? '#404040' : '#E5E7EB';
+  const backgroundColor = isDark ? '#17130F' : '#F5F1ED';
+  const surfaceColor = isDark ? '#221D18' : '#FFFFFF';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
+  const placeholderColor = isDark ? '#A89C8C' : '#6B5E4F';
+  const borderColor = isDark ? '#3A3128' : '#E5E7EB';
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -175,7 +175,7 @@ export const ContactScreen: React.FC = () => {
                 className="border rounded-xl px-4 py-3 font-ubuntu text-body"
                 style={{
                   borderColor: errors.name ? '#EF4444' : borderColor,
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                  backgroundColor: isDark ? '#17130F' : '#FFFFFF',
                   color: textColor,
                 }}
                 placeholder="Your full name"
@@ -201,7 +201,7 @@ export const ContactScreen: React.FC = () => {
                 className="border rounded-xl px-4 py-3 font-ubuntu text-body"
                 style={{
                   borderColor: errors.email ? '#EF4444' : borderColor,
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                  backgroundColor: isDark ? '#17130F' : '#FFFFFF',
                   color: textColor,
                 }}
                 placeholder="your.email@example.com"
@@ -229,7 +229,7 @@ export const ContactScreen: React.FC = () => {
                 className="border rounded-xl px-4 py-3 font-ubuntu text-body"
                 style={{
                   borderColor: errors.subject ? '#EF4444' : borderColor,
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                  backgroundColor: isDark ? '#17130F' : '#FFFFFF',
                   color: textColor,
                 }}
                 placeholder="What's this about?"
@@ -255,7 +255,7 @@ export const ContactScreen: React.FC = () => {
                 className="border rounded-xl px-4 py-3 font-ubuntu text-body"
                 style={{
                   borderColor: errors.message ? '#EF4444' : borderColor,
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                  backgroundColor: isDark ? '#17130F' : '#FFFFFF',
                   color: textColor,
                   minHeight: 120,
                   textAlignVertical: 'top',

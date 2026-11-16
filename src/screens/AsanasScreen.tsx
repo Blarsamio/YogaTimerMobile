@@ -1,4 +1,6 @@
+import { View } from 'react-native';
 import { AsanaList } from '../components/AsanaList';
+import { BackButton } from '../components/ui';
 import { Asana } from '../types';
 import { Loading } from '../components/common/Loading';
 import { Error } from '../components/common/Error';
@@ -16,7 +18,14 @@ export const AsanasScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   if (error) {
-    return <Error message={(error as Error).message || 'Failed to fetch asanas'} onRetry={refetch} />;
+    return (
+      <View className="flex-1 bg-background dark:bg-umber">
+        <View className="px-6 pt-16">
+          <BackButton onPress={() => navigation.goBack()} size={44} />
+        </View>
+        <Error message={(error as Error).message || 'Failed to fetch asanas'} onRetry={refetch} />
+      </View>
+    );
   }
 
   return <AsanaList asanas={asanas} />;

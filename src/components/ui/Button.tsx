@@ -40,7 +40,7 @@ export const Button: React.FC<ButtonProps> = ({
         baseStyles += ' bg-accent';
         break;
       case 'secondary':
-        baseStyles += ' bg-surface';
+        baseStyles += ' bg-surface dark:bg-card';
         break;
       case 'outline':
         baseStyles += ' bg-transparent border border-accent';
@@ -59,10 +59,10 @@ export const Button: React.FC<ButtonProps> = ({
 
     switch (variant) {
       case 'primary':
-        textStyles += ' text-white';
+        textStyles += ' text-umber';
         break;
       case 'secondary':
-        textStyles += ' text-text-primary';
+        textStyles += ' text-text-primary dark:text-ink';
         break;
       case 'outline':
         textStyles += ' text-accent';

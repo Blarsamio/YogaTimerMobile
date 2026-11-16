@@ -49,10 +49,10 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
   const renderAsanaItem = ({ item }: { item: Asana }) => (
     <TouchableOpacity
       onPress={() => handleSelectAsana(item.title)}
-      className="p-2 border-b border-gray-200"
+      className="p-2 border-b border-line"
     >
-      <Text className="text-black">{item.title}</Text>
-      <Text className="text-xs text-gray-600">{item.recommended_time}</Text>
+      <Text className="text-ink">{item.title}</Text>
+      <Text className="text-xs text-muted">{item.recommended_time}</Text>
     </TouchableOpacity>
   );
 
@@ -60,9 +60,9 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
     <View>
       <TouchableOpacity
         onPress={() => setIsModalOpen(true)}
-        className="bg-gold rounded p-2 w-full items-center"
+        className="bg-accent rounded p-2 w-full items-center"
       >
-        <Ionicons name="add" size={24} color="white" />
+        <Ionicons name="add" size={24} color="#17130F" />
       </TouchableOpacity>
 
       <FormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
@@ -71,7 +71,7 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
             value={title}
             onChangeText={handleTitleChange}
             placeholder="Asana"
-            className="border p-2 mb-2 w-full bg-white text-black rounded"
+            className="border p-2 mb-2 w-full bg-white text-ink rounded"
           />
 
           {filteredAsanas.length > 0 && (
@@ -90,14 +90,14 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
             onChangeText={setDuration}
             placeholder="Set duration in minutes"
             keyboardType="numeric"
-            className="border p-2 mb-2 w-full bg-white text-black rounded mt-2"
+            className="border p-2 mb-2 w-full bg-white text-ink rounded mt-2"
           />
 
           <TouchableOpacity
             onPress={handleSubmit}
-            className="bg-gold p-2 mt-4 rounded"
+            className="bg-accent p-2 mt-4 rounded"
           >
-            <Text className="text-white text-center">Add Timer</Text>
+            <Text className="text-umber text-center">Add Timer</Text>
           </TouchableOpacity>
         </View>
       </FormModal>

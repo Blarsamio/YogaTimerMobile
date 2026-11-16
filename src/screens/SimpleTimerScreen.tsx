@@ -23,8 +23,8 @@ export const SimpleTimerScreen: React.FC = () => {
   // Create audio player for timer completion sound
   const player = useAudioPlayer(require('../../assets/audio/bowl.wav'));
 
-  const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
+  const backgroundColor = isDark ? '#17130F' : '#FAF7F2';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
   const timerColor = isDark ? '#A99985' : '#A99985';
 
   const durationInSeconds = duration * 60;

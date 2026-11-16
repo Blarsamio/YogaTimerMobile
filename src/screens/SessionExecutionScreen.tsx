@@ -1,75 +1,86 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, ScrollView, Alert, Animated, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, Alert, Animated } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useKeepAwake } from 'expo-keep-awake';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import { useSettings, hapticsOn } from '../hooks/useSettings';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAudioPlayer, AudioModule } from 'expo-audio';
+import { AudioModule } from 'expo-audio';
 import { ApiService } from '../config/api';
 import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useDeviceUser } from '../hooks/useDeviceUser';
+import { SafetyCard } from '../components/SafetyCard';
+import { useCues } from '../practice/useCues';
 import {
-  buildSegments, positionAt, startOf, elapsedSeconds, pause, resume, seekTo, formatClock, Clock,
+  buildSegments, positionAt, Segment, startOf, cueRoleAt, elapsedSeconds, pause, resume, seekTo, formatClock, totalSeconds, Clock,
 } from '../practice/segments';
 
 type SessionExecutionRouteProp = RouteProp<RootStackParamList, 'SessionExecution'>;
 
-const { width: screenWidth } = Dimensions.get('window');
-
 const DEFAULT_REBOUND_SECONDS = 45;
-// One in-progress run, so a killed app resumes where it was.
-const RUN_STORAGE_KEY = 'practice_run';
+// One in-progress run, so a killed app resumes where it was and Home can offer Continue.
+export const RUN_STORAGE_KEY = 'practice_run';
+
+// Ember & Clay
+const TAUPE = '#A99985';
+const CLAY = '#C08A6A';
+const UMBER = '#17130F';
+const REFLECTIONS = ['Open', 'Heavy', 'Calm', 'Restless', 'Tender'];
 
 // "Shoelace · left", but not "Bananasana to the left · left".
 const sideLabel = (segment: { title: string; side: string | null }) =>
   segment.side && !segment.title.toLowerCase().includes(segment.side) ? ` · ${segment.side}` : '';
 
+const isRest = (kind?: string) => kind === 'rebound' || kind === 'switch';
+
+const withExtra = (segments: Segment[], extra: Record<number, number>) =>
+  segments.map((segment, index) => (extra[index] ? { ...segment, duration: segment.duration + extra[index] } : segment));
+
 export const SessionExecutionScreen: React.FC = () => {
   const route = useRoute<SessionExecutionRouteProp>();
   const navigation = useNavigation();
   const { isDark } = useTheme();
-  useKeepAwake(); // Screen stays on for the whole practice; released when the screen unmounts.
+  const [settings] = useSettings();
 
-  const { session } = route.params;
+  // Screen stays on for the practice unless turned off in Settings; released on unmount.
+  useEffect(() => {
+    if (!settings.keepAwake) return;
+    activateKeepAwakeAsync('practice').catch(() => {});
+    return () => { deactivateKeepAwake('practice').catch(() => {}); };
+  }, [settings.keepAwake]);
 
-  const segments = useMemo(() => {
+  const { session, transitionSound } = route.params;
+
+  // Seconds added with "+1 min", per segment index.
+  const [extra, setExtra] = useState<Record<number, number>>({});
+  const baseSegments = useMemo(() => {
     const ordered = [...session.timers].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     return buildSegments(ordered, session.rebound_seconds ?? DEFAULT_REBOUND_SECONDS);
   }, [session]);
+  const segments = useMemo(() => withExtra(baseSegments, extra), [baseSegments, extra]);
 
+  const [showEdge, setShowEdge] = useState(false);
   const [clock, setClock] = useState<Clock | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [showSidePanel, setShowSidePanel] = useState(false);
-  const [selectedSoundIndex, setSelectedSoundIndex] = useState(0);
+  const [showControls, setShowControls] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
-  const [showSaveOptions, setShowSaveOptions] = useState(false);
-  const [sessionName, setSessionName] = useState('');
+  const [reflection, setReflection] = useState<string | null>(null); // ponytail: not stored yet; persist when there's a history screen
   const [isSaving, setIsSaving] = useState(false);
   const { deviceId } = useDeviceUser();
 
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const completionAnim = useRef(new Animated.Value(0)).current;
   const completionOpacity = useRef(new Animated.Value(0)).current;
   const previousIndex = useRef<number | null>(null);
 
-  const availableSounds = [
-    { id: 'bowl', name: 'Singing Bowl' },
-    { id: 'chime', name: 'Wind Chime' },
-    { id: 'bells', name: 'Healing Bells' },
-    { id: 'gong', name: 'Tibetan Gong' },
-  ];
+  const cue = useCues(settings.cueMode, transitionSound);
 
-  const transitionPlayer = useAudioPlayer(
-    require('../../assets/audio/bowl.wav')
-  );
-
-  const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
-  const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
-  const accentColor = '#A99985';
+  const backgroundColor = isDark ? '#0E0B08' : '#FAF7F2';
+  const textColor = isDark ? '#EDE4D6' : UMBER;
+  const mutedColor = isDark ? '#A89C8C' : '#6B5E4F';
+  const lineColor = isDark ? '#3A3128' : '#E3D9CB';
+  const cardBgColor = isDark ? '#2A231C' : '#F5F1ED';
 
   // Position is derived from timestamps, never from counting ticks, so it can't drift.
   const elapsed = clock ? elapsedSeconds(clock, now) : 0;
@@ -77,13 +88,26 @@ export const SessionExecutionScreen: React.FC = () => {
   const currentSegment = segments[position.index];
   const nextSegment = segments[position.index + 1];
   const isPaused = !!clock?.pausedAt;
+  const resting = isRest(currentSegment?.kind);
   const circularProgress = currentSegment ? 1 - position.remaining / currentSegment.duration : 1;
+  const poses = segments.filter((segment) => !isRest(segment.kind));
+
+  const isCustomSession = !session.id ||
+    session.id.toString().startsWith('custom_') ||
+    session.name === 'Custom Practice' ||
+    (typeof session.id === 'number' && session.id > 1000000000000);
+  const totalMinutes = Math.round(totalSeconds(segments) / 60);
+  const suggestedName = `${session.timers[0]?.title ?? 'Practice'} · ${totalMinutes}′`;
+
+  const persistRun = useCallback((nextClock: Clock, nextExtra: Record<number, number>) => {
+    AsyncStorage.setItem(RUN_STORAGE_KEY, JSON.stringify({ sessionId: session.id, session, extra: nextExtra, ...nextClock })).catch(() => {});
+  }, [session]);
 
   const updateClock = useCallback((next: Clock) => {
     setClock(next);
     setNow(Date.now());
-    AsyncStorage.setItem(RUN_STORAGE_KEY, JSON.stringify({ sessionId: session.id, ...next })).catch(() => {});
-  }, [session.id]);
+    persistRun(next, extra);
+  }, [persistRun, extra]);
 
   const clearRun = () => AsyncStorage.removeItem(RUN_STORAGE_KEY).catch(() => {});
 
@@ -101,17 +125,27 @@ export const SessionExecutionScreen: React.FC = () => {
       }
 
       let resumed: Clock | null = null;
+      let resumedExtra: Record<number, number> = {};
       try {
         const stored = JSON.parse((await AsyncStorage.getItem(RUN_STORAGE_KEY)) ?? 'null');
-        if (stored?.sessionId === session.id && !positionAt(segments, elapsedSeconds(stored, Date.now())).done) {
+        if (stored?.sessionId === session.id &&
+            !positionAt(withExtra(baseSegments, stored.extra ?? {}), elapsedSeconds(stored, Date.now())).done) {
           resumed = { startedAt: stored.startedAt, pausedAt: stored.pausedAt, pausedMs: stored.pausedMs };
+          resumedExtra = stored.extra ?? {};
         }
       } catch {
         // Corrupt or unavailable storage: start fresh.
       }
-      updateClock(resumed ?? { startedAt: Date.now(), pausedAt: null, pausedMs: 0 });
+      const clockToUse = resumed ?? { startedAt: Date.now(), pausedAt: null, pausedMs: 0 };
+      setExtra(resumedExtra);
+      setClock(clockToUse);
+      setNow(Date.now());
+      persistRun(clockToUse, resumedExtra);
+      if (!resumed) cue('session_start');
     })();
-  }, [session.id, segments, updateClock]);
+    // Runs once per session: later clock changes go through updateClock.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.id]);
 
   // Re-render a few times a second; the tick only refreshes the display.
   useEffect(() => {
@@ -120,110 +154,34 @@ export const SessionExecutionScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [clock, isPaused, position.done]);
 
-  const toggleSidePanel = () => {
-    const toValue = showSidePanel ? 0 : 1;
-    setShowSidePanel(!showSidePanel);
-
-    Animated.timing(slideAnim, {
-      toValue,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeSidePanel = () => {
-    if (showSidePanel) {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => setShowSidePanel(false));
-    }
-  };
-
-  const playBell = useCallback(() => {
-    try {
-      if (transitionPlayer.playing) transitionPlayer.pause();
-      transitionPlayer.seekTo(0);
-      transitionPlayer.play();
-    } catch (error) {
-      console.log('Error playing sound:', error);
-    }
-  }, [transitionPlayer]);
-
   const handleSessionComplete = useCallback(() => {
     clearRun();
+    setShowControls(false);
     setShowCompletion(true);
+    Animated.timing(completionOpacity, { toValue: 1, duration: 1500, useNativeDriver: true }).start();
+  }, [completionOpacity]);
 
-    Animated.parallel([
-      Animated.timing(completionAnim, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(completionOpacity, {
-        toValue: 1,
-        duration: 1500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    setTimeout(() => {
-      const sessionId = session.id;
-      const isCustomSession = !sessionId ||
-                             sessionId.toString().startsWith('custom_') ||
-                             session.name === 'Custom Practice' ||
-                             (typeof sessionId === 'number' && sessionId > 1000000000000);
-
-      if (isCustomSession) {
-        const totalMinutes = Math.round(segments.reduce((sum, segment) => sum + segment.duration, 0) / 60);
-        const poseCount = session.timers.length;
-        setSessionName(`My ${totalMinutes}-Minute Session (${poseCount} poses)`);
-        setShowSaveOptions(true);
-      } else {
-        navigation.navigate('Home');
-      }
-    }, 3000);
-  }, [completionAnim, completionOpacity, navigation, session, segments]);
-
-  // Cue every boundary once. After a long suspension several boundaries collapse into one bell.
+  // Cue every boundary once, by role. After a long suspension several boundaries collapse into one cue.
   useEffect(() => {
     if (!clock) return;
     const index = position.index;
     if (previousIndex.current !== null && index !== previousIndex.current) {
-      playBell();
-      if (currentSegment?.kind === 'switch' || currentSegment?.side) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      }
+      cue(cueRoleAt(segments, index));
       if (position.done) handleSessionComplete();
     }
     previousIndex.current = index;
-  }, [clock, position.index, position.done, currentSegment, playBell, handleSessionComplete]);
+  }, [clock, position.index, position.done, segments, cue, handleSessionComplete]);
 
-  const handleSkipTimer = () => {
-    Alert.alert(
-      'Skip?',
-      `Skip ${currentSegment?.title ?? 'this segment'}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Skip',
-          onPress: () => {
-            if (clock) updateClock(seekTo(clock, Date.now(), startOf(segments, position.index + 1)));
-          },
-        },
-      ]
-    );
+  const jumpTo = (index: number) => {
+    if (clock) updateClock(seekTo(clock, Date.now(), startOf(segments, Math.max(0, index))));
   };
 
-  const handleSoundChange = (direction: 'prev' | 'next') => {
-    setSelectedSoundIndex(prev => {
-      if (direction === 'next') {
-        return (prev + 1) % availableSounds.length;
-      } else {
-        return (prev - 1 + availableSounds.length) % availableSounds.length;
-      }
-    });
+  // Lengthens only the current hold; later poses keep their place in the sequence.
+  const addMinute = () => {
+    if (!clock || position.done) return;
+    const nextExtra = { ...extra, [position.index]: (extra[position.index] ?? 0) + 60 };
+    setExtra(nextExtra);
+    persistRun(clock, nextExtra);
   };
 
   const handlePlayPause = () => {
@@ -231,16 +189,18 @@ export const SessionExecutionScreen: React.FC = () => {
     updateClock(isPaused ? resume(clock, Date.now()) : pause(clock, Date.now()));
   };
 
-  const handleSaveSession = async () => {
-    if (!sessionName.trim()) {
-      Alert.alert('Session Name Required', 'Please enter a name for your session.');
-      return;
-    }
+  // Long press, not an Alert: ending is deliberate but never a modal mid-practice.
+  const handleEnd = () => {
+    if (hapticsOn(settings)) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    clearRun();
+    navigation.navigate('Home');
+  };
 
+  const handleSaveSession = async () => {
     setIsSaving(true);
     try {
       const sessionResponse = await ApiService.createSession({
-        name: sessionName.trim(),
+        name: suggestedName,
         description: 'Custom yoga session',
         deviceId: deviceId || undefined,
         rebound_seconds: session.rebound_seconds ?? DEFAULT_REBOUND_SECONDS,
@@ -258,483 +218,228 @@ export const SessionExecutionScreen: React.FC = () => {
       if (sessionResponse.error || !sessionResponse.data) {
         throw new Error(sessionResponse.error || 'Failed to create session');
       }
-
-      Alert.alert(
-        'Session Saved! 🙏',
-        `"${sessionName}" has been added to your session library.`,
-        [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
-      );
+      navigation.navigate('Home');
     } catch (error) {
       console.error('Session save failed:', error);
-      Alert.alert(
-        'Save Failed',
-        'Unable to save your session. Please try again.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Save failed', 'Unable to save your session. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDontSave = () => {
-    navigation.navigate('Home');
-  };
-
-  const handleExitSession = () => {
-    Alert.alert(
-      'Exit Session?',
-      'Are you sure you want to exit your yoga practice? Your progress will be lost.',
-      [
-        { text: 'Continue Practice', style: 'cancel' },
-        {
-          text: 'Exit',
-          style: 'destructive',
-          onPress: () => {
-            clearRun();
-            navigation.navigate('Home');
-          },
-        },
-      ]
-    );
-  };
-
-  const CircularProgress = ({ progress }: { progress: number }) => {
+  const ring = (() => {
     const size = 280;
-    const strokeWidth = 8;
+    const strokeWidth = 2;
     const center = size / 2;
     const radius = center - strokeWidth / 2;
     const circumference = 2 * Math.PI * radius;
-    const strokeDasharray = circumference;
-    const strokeDashoffset = circumference * (1 - progress);
-
     return (
-      <View
-        style={{
-          width: size,
-          height: size,
-        }}
-      >
+      <View style={{ width: size, height: size }}>
         <Svg width={size} height={size}>
+          <Circle cx={center} cy={center} r={radius} stroke={lineColor} strokeWidth={strokeWidth} fill="none" />
           <Circle
             cx={center}
             cy={center}
             r={radius}
-            stroke={isDark ? '#3D3D3D' : '#E5E5E5'}
+            stroke={resting ? mutedColor : TAUPE}
             strokeWidth={strokeWidth}
-            fill="none"
-          />
-          <Circle
-            cx={center}
-            cy={center}
-            r={radius}
-            stroke={accentColor}
-            strokeWidth={strokeWidth}
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - circularProgress)}
             strokeLinecap="round"
             fill="none"
             transform={`rotate(-90 ${center} ${center})`}
           />
         </Svg>
-
-        <View style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }}>
           <Text
-            accessibilityLabel={`${formatClock(position.remaining)} remaining`}
+            accessibilityLabel={`${formatClock(position.remaining)} remaining${isPaused ? ', paused' : ''}`}
             style={{
-              fontSize: 56,
-              fontFamily: 'zen',
-              color: accentColor,
+              fontSize: resting ? 64 : 96,
+              fontFamily: 'ZenAntiqueSoft_400Regular',
+              color: resting ? mutedColor : TAUPE,
               fontVariant: ['tabular-nums'],
+              opacity: isPaused ? 0.4 : 1,
             }}
           >
             {formatClock(position.remaining)}
           </Text>
-
-          <View style={{
-            position: 'absolute',
-            bottom: 20,
-            opacity: 0.4
-          }}>
-            <Ionicons
-              name={isPaused ? "play" : "pause"}
-              size={16}
-              color={accentColor}
-            />
-          </View>
+          {isPaused && (
+            <Text style={{ color: mutedColor, fontSize: 14, marginTop: 4 }}>Paused</Text>
+          )}
         </View>
       </View>
     );
-  };
+  })();
 
-  return (
-    <View className="flex-1" style={{ backgroundColor }}>
-      <View className="flex-1">
-        <View className="flex-row items-center justify-between pt-16 pb-8 px-8">
-          <TouchableOpacity onPress={handleExitSession}>
-            <Ionicons name="home" size={32} color={accentColor} />
-          </TouchableOpacity>
+  const roundButton = (icon: keyof typeof Ionicons.glyphMap, label: string, onPress: () => void, big = false) => (
+    <TouchableOpacity
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      activeOpacity={0.7}
+      style={{
+        width: big ? 72 : 56,
+        height: big ? 72 : 56,
+        borderRadius: 9999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: big ? TAUPE : cardBgColor,
+      }}
+    >
+      <Ionicons name={icon} size={big ? 30 : 22} color={big ? UMBER : TAUPE} />
+    </TouchableOpacity>
+  );
 
-          <TouchableOpacity onPress={toggleSidePanel}>
-            <Ionicons name="settings" size={32} color={accentColor} />
-          </TouchableOpacity>
-        </View>
-
-        <View className="flex-1 items-center justify-center px-8">
-          <Text
-            accessibilityRole="header"
-            className="font-zen text-center"
-            style={{ color: textColor, fontSize: 28, marginBottom: 6 }}
-          >
-            {currentSegment ? `${currentSegment.title}${sideLabel(currentSegment)}` : ''}
+  if (showCompletion) {
+    return (
+      <Animated.View style={{ flex: 1, backgroundColor: isDark ? UMBER : '#FAF7F2', opacity: completionOpacity, paddingTop: 120, paddingHorizontal: 24, paddingBottom: 36 }}>
+        <View style={{ alignItems: 'center', gap: 12 }}>
+          <Text accessibilityRole="header" style={{ fontFamily: 'ZenAntiqueSoft_400Regular', fontSize: 40, lineHeight: 48, color: textColor, textAlign: 'center' }}>
+            {totalMinutes} minutes{'\n'}of stillness
           </Text>
-          <Text
-            className="font-ubuntu text-center"
-            style={{ color: textColor, opacity: 0.6, fontSize: 15, minHeight: 20, marginBottom: 24 }}
-          >
-            {currentSegment?.instruction ?? ''}
-          </Text>
-
-          <TouchableOpacity
-            onPress={handlePlayPause}
-            activeOpacity={0.8}
-            style={{ borderRadius: 200 }}
-            accessibilityRole="button"
-            accessibilityLabel={isPaused ? 'Resume' : 'Pause'}
-          >
-            <CircularProgress progress={circularProgress} />
-          </TouchableOpacity>
-
-          <Text
-            className="font-ubuntu text-center"
-            style={{ color: textColor, opacity: 0.6, fontSize: 15, marginTop: 24 }}
-          >
-            {nextSegment
-              ? `Next: ${nextSegment.title}${sideLabel(nextSegment)} · ${formatClock(nextSegment.duration)}`
-              : 'Last one'}
+          <Text style={{ fontSize: 14, lineHeight: 20, color: mutedColor, textAlign: 'center' }}>
+            {poses.map((segment) => segment.title).join(' · ')}
           </Text>
         </View>
 
-        <View className="items-center pb-16 px-8">
-          <TouchableOpacity
-            onPress={handleSkipTimer}
-            className="flex-row items-center px-6 py-3"
-            activeOpacity={0.7}
-          >
-            <Text
-              className="text-lg font-zen mr-3"
-              style={{ color: textColor, opacity: 0.6 }}
-            >
-              skip me
-            </Text>
-            <Ionicons name="arrow-forward" size={20} color={textColor} style={{ opacity: 0.6 }} />
-          </TouchableOpacity>
-        </View>
-      </View>
+        <View style={{ height: 1, backgroundColor: lineColor, marginVertical: 32 }} />
 
-      {showSidePanel && (
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.3)',
-          }}
-          onPress={closeSidePanel}
-          activeOpacity={1}
-        />
-      )}
-
-      <Animated.View
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: screenWidth * 0.65,
-          backgroundColor: cardBgColor,
-          transform: [
-            {
-              translateX: slideAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [screenWidth * 0.65, 0],
-              }),
-            },
-          ],
-          shadowColor: '#000',
-          shadowOffset: { width: -2, height: 0 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 5,
-        }}
-      >
-        <ScrollView className="flex-1 pt-16 px-6">
-          <View className="mb-8">
-            <Text className="text-lg font-zen mb-4" style={{ color: textColor }}>
-              sequence
-            </Text>
-
-            {segments.map((segment, index) => (
-              <View
-                key={index}
-                className={`px-4 py-3 rounded-full mb-2 ${
-                  index === position.index
-                    ? 'bg-accent'
-                    : index < position.index
-                      ? 'bg-gray-300'
-                      : 'bg-transparent border border-gray-300'
-                }`}
+        <Text style={{ fontFamily: 'ZenAntiqueSoft_400Regular', fontSize: 20, lineHeight: 28, color: textColor, textAlign: 'center', marginBottom: 16 }}>
+          How does your body feel?
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
+          {REFLECTIONS.map((label) => {
+            const on = reflection === label;
+            return (
+              <TouchableOpacity
+                key={label}
+                onPress={() => setReflection(on ? null : label)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
                 style={{
-                  backgroundColor:
-                    index === position.index
-                      ? accentColor
-                      : index < position.index
-                        ? (isDark ? '#6B7280' : '#D1D5DB')
-                        : 'transparent',
-                  borderColor: index < position.index ? 'transparent' : (isDark ? '#6B7280' : '#D1D5DB'),
-                  borderWidth: index >= position.index ? 1 : 0,
+                  height: 44,
+                  paddingHorizontal: 18,
+                  borderRadius: 9999,
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: on ? CLAY : lineColor,
+                  backgroundColor: on ? CLAY : 'transparent',
                 }}
               >
-                <Text
-                  className="text-center font-ubuntu-medium"
-                  style={{
-                    color:
-                      index === position.index
-                        ? '#FFFFFF'
-                        : index < position.index
-                          ? (isDark ? '#9CA3AF' : '#6B7280')
-                          : textColor,
-                  }}
-                >
-                  {segment.title}{sideLabel(segment)} · {formatClock(segment.duration)}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <View className="mb-8">
-            <Text className="text-lg font-zen mb-4" style={{ color: textColor }}>
-              sound
-            </Text>
-
-            <View className="flex-row items-center justify-between px-4">
-              <TouchableOpacity
-                onPress={() => handleSoundChange('prev')}
-                className="p-2"
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chevron-back" size={20} color={textColor} />
+                <Text style={{ fontSize: 15, color: on ? UMBER : textColor }}>{label}</Text>
               </TouchableOpacity>
+            );
+          })}
+        </View>
 
-              <Text className="text-center font-ubuntu-medium flex-1" style={{ color: textColor }}>
-                {availableSounds[selectedSoundIndex].name}
-              </Text>
-
-              <TouchableOpacity
-                onPress={() => handleSoundChange('next')}
-                className="p-2"
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chevron-forward" size={20} color={textColor} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-
-        <View className="p-6 pb-16">
+        <View style={{ marginTop: 'auto', gap: 8 }}>
           <TouchableOpacity
-            onPress={closeSidePanel}
-            className="items-center"
-            activeOpacity={0.7}
+            onPress={() => navigation.navigate('Home')}
+            accessibilityRole="button"
+            style={{ height: 56, borderRadius: 9999, backgroundColor: TAUPE, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Ionicons name="arrow-back" size={24} color={textColor} />
+            <Text style={{ fontSize: 17, fontWeight: '500', color: UMBER }}>Done</Text>
           </TouchableOpacity>
+          {isCustomSession && (
+            <TouchableOpacity
+              onPress={handleSaveSession}
+              disabled={isSaving}
+              accessibilityRole="button"
+              style={{ height: 48, alignItems: 'center', justifyContent: 'center', opacity: isSaving ? 0.5 : 1 }}
+            >
+              <Text style={{ fontSize: 16, color: TAUPE }}>
+                {isSaving ? 'Saving…' : `Save as “${suggestedName}”`}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </Animated.View>
+    );
+  }
 
-      {showCompletion && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: backgroundColor,
-          }}
-        >
-          <Animated.View
+  return (
+    <Pressable
+      style={{ flex: 1, backgroundColor, paddingTop: 64, paddingHorizontal: 24, paddingBottom: 40 }}
+      onPress={() => setShowControls((shown) => !shown)}
+      accessibilityHint="Shows or hides the controls"
+    >
+      {/* One clay segment per pose, sized by its hold. */}
+      <View style={{ flexDirection: 'row', gap: 3, height: 3 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {segments.map((segment, index) => (
+          <View
+            key={index}
             style={{
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              backgroundColor: accentColor,
-              transform: [
-                {
-                  scale: completionAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [1, 20],
-                  }),
-                },
-              ],
-              opacity: completionAnim.interpolate({
-                inputRange: [0, 0.7, 1],
-                outputRange: [0.8, 0.3, 0.1],
-              }),
+              flex: segment.duration,
+              borderRadius: 2,
+              backgroundColor: index < position.index ? CLAY : index === position.index ? TAUPE : lineColor,
+              opacity: isRest(segment.kind) ? 0.5 : 1,
             }}
           />
+        ))}
+      </View>
 
-          <Animated.View
-            style={{
-              position: 'absolute',
-              alignItems: 'center',
-              opacity: completionOpacity,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 32,
-                fontFamily: 'zen',
-                color: accentColor,
-                marginBottom: 16,
-                textAlign: 'center',
-              }}
-            >
-              🙏
-            </Text>
-            <Text
-              style={{
-                fontSize: 24,
-                fontFamily: 'zen',
-                color: textColor,
-                marginBottom: 8,
-                textAlign: 'center',
-              }}
-            >
-              Session Complete
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: 'zen',
-                color: textColor,
-                opacity: 0.8,
-                textAlign: 'center',
-                paddingHorizontal: 48,
-                lineHeight: 24,
-                marginBottom: showSaveOptions ? 32 : 0,
-              }}
-            >
-              Take a moment to rest in stillness and gratitude for your practice
-            </Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text
+          accessibilityRole="header"
+          style={{
+            fontFamily: 'ZenAntiqueSoft_400Regular',
+            textAlign: 'center',
+            color: resting ? mutedColor : textColor,
+            fontSize: 32,
+            lineHeight: 40,
+          }}
+        >
+          {currentSegment ? `${currentSegment.title}${sideLabel(currentSegment)}` : ''}
+        </Text>
+        <Text style={{ color: mutedColor, fontSize: 15, minHeight: 22, marginTop: 4, marginBottom: 32, textAlign: 'center' }}>
+          {currentSegment?.instruction ?? ''}
+        </Text>
 
-            {showSaveOptions && (
-              <View style={{ width: '100%', alignItems: 'center', paddingHorizontal: 32 }}>
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontFamily: 'zen',
-                    color: textColor,
-                    marginBottom: 16,
-                    textAlign: 'center',
-                  }}
-                >
-                  Save this session?
-                </Text>
+        {ring}
 
-                <TextInput
-                  style={{
-                    width: '100%',
-                    maxWidth: 280,
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    borderWidth: 1,
-                    borderColor: accentColor,
-                    borderRadius: 12,
-                    backgroundColor: cardBgColor,
-                    color: textColor,
-                    fontSize: 16,
-                    fontFamily: 'ubuntu',
-                    textAlign: 'center',
-                    marginBottom: 24,
-                  }}
-                  placeholder="Enter session name..."
-                  placeholderTextColor={textColor + '80'}
-                  value={sessionName}
-                  onChangeText={setSessionName}
-                  maxLength={50}
-                  returnKeyType="done"
-                  onSubmitEditing={handleSaveSession}
-                />
+        <Text style={{ color: mutedColor, fontSize: 15, marginTop: 32, textAlign: 'center' }}>
+          {nextSegment
+            ? `Next · ${nextSegment.title}${sideLabel(nextSegment)} ${formatClock(nextSegment.duration)}`
+            : 'Last one'}
+        </Text>
+      </View>
 
-                <View style={{ flexDirection: 'row', gap: 16 }}>
-                  <TouchableOpacity
-                    onPress={handleDontSave}
-                    style={{
-                      paddingHorizontal: 24,
-                      paddingVertical: 12,
-                      borderRadius: 25,
-                      borderWidth: 1,
-                      borderColor: textColor + '40',
-                      minWidth: 120,
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontFamily: 'ubuntu',
-                        color: textColor,
-                        textAlign: 'center',
-                        opacity: 0.8,
-                      }}
-                    >
-                                             Don&apos;t Save
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={handleSaveSession}
-                    disabled={isSaving}
-                    style={{
-                      paddingHorizontal: 24,
-                      paddingVertical: 12,
-                      borderRadius: 25,
-                      backgroundColor: accentColor,
-                      minWidth: 120,
-                      opacity: isSaving ? 0.7 : 1,
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontFamily: 'ubuntu',
-                        color: backgroundColor,
-                        textAlign: 'center',
-                        fontWeight: '600',
-                      }}
-                    >
-                      {isSaving ? 'Saving...' : 'Save Session'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          </Animated.View>
+      {/* Hidden until tapped: the practice screen stays still by default. */}
+      <View style={{ minHeight: 224, justifyContent: 'flex-end', opacity: showControls ? 1 : 0 }} pointerEvents={showControls ? 'auto' : 'none'}>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 24, marginBottom: 24 }}>
+          {roundButton('play-skip-back', 'Previous', () => jumpTo(position.index - 1))}
+          {roundButton(isPaused ? 'play' : 'pause', isPaused ? 'Resume' : 'Pause', handlePlayPause, true)}
+          {roundButton('play-skip-forward', 'Next', () => jumpTo(position.index + 1))}
         </View>
-      )}
-    </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 16 }}>
+          {[
+            { label: '+1 min', onPress: addMinute, a11y: 'Add one minute to this hold' },
+            { label: 'Edge & pain', onPress: () => setShowEdge(true), a11y: 'Edge and pain guidance' },
+          ].map((chip) => (
+            <TouchableOpacity
+              key={chip.label}
+              onPress={chip.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={chip.a11y}
+              style={{ height: 40, paddingHorizontal: 16, borderRadius: 9999, backgroundColor: cardBgColor, justifyContent: 'center' }}
+            >
+              <Text style={{ color: textColor, fontSize: 15 }}>{chip.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity
+          onLongPress={handleEnd}
+          delayLongPress={800}
+          accessibilityRole="button"
+          accessibilityLabel="Hold to end session"
+          activeOpacity={0.6}
+          style={{ alignSelf: 'center', height: 48, paddingHorizontal: 24, borderRadius: 9999, borderWidth: 1, borderColor: CLAY, justifyContent: 'center' }}
+        >
+          <Text style={{ color: CLAY, fontSize: 15 }}>Hold to end</Text>
+        </TouchableOpacity>
+      </View>
+
+      <SafetyCard visible={showEdge} onClose={() => setShowEdge(false)} />
+    </Pressable>
   );
 };
