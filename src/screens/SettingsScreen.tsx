@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, Pressable, ScrollView } from 'react-nativ
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { useSettings, Settings } from '../hooks/useSettings';
+import { useSettings, Settings, CueMode } from '../hooks/useSettings';
 import { INTERMISSION_OPTIONS } from '../components/IntermissionModal';
+
+const CUE_MODES: [CueMode, string][] = [['bells', 'Bells'], ['both', 'Both'], ['haptics', 'Touch'], ['silent', 'Silent']];
 
 const REBOUND_STEPS = INTERMISSION_OPTIONS.map((option) => option.duration);
 
@@ -23,7 +25,6 @@ export const SettingsScreen: React.FC = () => {
   const line = isDark ? '#3A3128' : '#E3D9CB';
 
   const toggles: [keyof Settings, string, string][] = [
-    ['haptics', 'Haptics', 'A soft tap when you switch sides'],
     ['keepAwake', 'Keep screen on', 'Off: bells only, screen sleeps'],
   ];
 
@@ -81,6 +82,29 @@ export const SettingsScreen: React.FC = () => {
               </View>
             );
           })}
+        </View>
+
+        <View style={{ gap: 8 }}>
+          <View>
+            <Text style={{ fontSize: 16, lineHeight: 24, color: text }}>Transitions</Text>
+            <Text style={{ fontSize: 13, lineHeight: 18, color: muted }}>Bells, a soft tap on the phone, both, or nothing</Text>
+          </View>
+          <View style={{ flexDirection: 'row', padding: 4, borderRadius: 9999, backgroundColor: isDark ? UMBER : '#F5F1ED' }} accessibilityRole="radiogroup">
+            {CUE_MODES.map(([mode, label]) => {
+              const on = settings.cueMode === mode;
+              return (
+                <TouchableOpacity
+                  key={mode}
+                  onPress={() => update({ cueMode: mode })}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: on }}
+                  style={{ flex: 1, height: 36, borderRadius: 9999, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? CLAY : 'transparent' }}
+                >
+                  <Text style={{ fontSize: 15, color: on ? UMBER : text }}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>

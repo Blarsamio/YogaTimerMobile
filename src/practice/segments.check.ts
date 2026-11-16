@@ -1,6 +1,6 @@
 // Run: node src/practice/segments.check.ts
 import assert from 'node:assert/strict';
-import { buildSegments, positionAt, totalSeconds, pause, resume, seekTo, elapsedSeconds, formatClock, SIDE_SWITCH_SECONDS } from './segments.ts';
+import { buildSegments, positionAt, totalSeconds, pause, resume, seekTo, elapsedSeconds, formatClock, SIDE_SWITCH_SECONDS, cueRoleAt } from './segments.ts';
 
 const segments = buildSegments(
   [
@@ -39,5 +39,11 @@ assert.equal(elapsedSeconds(clock, 18_000), 420);
 assert.equal(formatClock(59.2), '1:00');
 assert.equal(formatClock(240), '4:00');
 assert.equal(formatClock(-3), '0:00');
+
+assert.deepEqual(
+  [0, 1, 2, 3, 4, 8].map(index => cueRoleAt(segments, index)),
+  ['session_start', 'pose_start', 'side_switch', 'pose_start', 'rebound_start', 'session_end'],
+  'each boundary gets its own cue role',
+);
 
 console.log('segments: ok');

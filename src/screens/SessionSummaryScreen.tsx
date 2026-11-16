@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,6 +9,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAsanas } from '../hooks/useAsanas';
 import { RootStackParamList } from '../navigation/types';
 import { buildSegments, formatClock, totalSeconds } from '../practice/segments';
+import { SafetyCard, SAFETY_SEEN_KEY } from '../components/SafetyCard';
 
 const TAUPE = '#A99985';
 const CLAY = '#C08A6A';
@@ -24,6 +26,22 @@ export const SessionSummaryScreen: React.FC = () => {
   const bell = useAudioPlayer(require('../../assets/audio/bowl.wav'));
 
   const { session } = params;
+  const [showSafety, setShowSafety] = useState(false);
+
+  const start = () => navigation.replace('SessionExecution', params);
+
+  // First practice ever: the edge-vs-pain card comes before the first bell.
+  const handleStart = async () => {
+    const seen = await AsyncStorage.getItem(SAFETY_SEEN_KEY).catch(() => '1');
+    if (seen) start();
+    else setShowSafety(true);
+  };
+
+  const acknowledgeSafety = () => {
+    AsyncStorage.setItem(SAFETY_SEEN_KEY, '1').catch(() => {});
+    setShowSafety(false);
+    start();
+  };
   const timers = useMemo(
     () => [...session.timers].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
     [session],
@@ -108,13 +126,14 @@ export const SessionSummaryScreen: React.FC = () => {
 
       <View style={{ paddingHorizontal: 24, paddingBottom: 36, paddingTop: 12 }}>
         <TouchableOpacity
-          onPress={() => navigation.replace('SessionExecution', params)}
+          onPress={handleStart}
           accessibilityRole="button"
           style={{ height: 56, borderRadius: 9999, backgroundColor: TAUPE, alignItems: 'center', justifyContent: 'center' }}
         >
           <Text style={{ fontSize: 17, fontWeight: '500', color: UMBER }}>Start</Text>
         </TouchableOpacity>
       </View>
+      <SafetyCard visible={showSafety} onClose={acknowledgeSafety} closeLabel="I understand, begin" />
     </View>
   );
 };

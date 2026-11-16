@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Pressable, Alert, Animated, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, Alert, Animated } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { useSettings } from '../hooks/useSettings';
+import { useSettings, hapticsOn } from '../hooks/useSettings';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAudioPlayer, AudioModule } from 'expo-audio';
+import { AudioModule } from 'expo-audio';
 import { ApiService } from '../config/api';
 import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useDeviceUser } from '../hooks/useDeviceUser';
+import { SafetyCard } from '../components/SafetyCard';
+import { useCues } from '../practice/useCues';
 import {
-  buildSegments, positionAt, Segment, startOf, elapsedSeconds, pause, resume, seekTo, formatClock, totalSeconds, Clock,
+  buildSegments, positionAt, Segment, startOf, cueRoleAt, elapsedSeconds, pause, resume, seekTo, formatClock, totalSeconds, Clock,
 } from '../practice/segments';
 
 type SessionExecutionRouteProp = RouteProp<RootStackParamList, 'SessionExecution'>;
@@ -50,7 +52,7 @@ export const SessionExecutionScreen: React.FC = () => {
     return () => { deactivateKeepAwake('practice').catch(() => {}); };
   }, [settings.keepAwake]);
 
-  const { session } = route.params;
+  const { session, transitionSound } = route.params;
 
   // Seconds added with "+1 min", per segment index.
   const [extra, setExtra] = useState<Record<number, number>>({});
@@ -72,9 +74,7 @@ export const SessionExecutionScreen: React.FC = () => {
   const completionOpacity = useRef(new Animated.Value(0)).current;
   const previousIndex = useRef<number | null>(null);
 
-  const transitionPlayer = useAudioPlayer(
-    require('../../assets/audio/bowl.wav')
-  );
+  const cue = useCues(settings.cueMode, transitionSound);
 
   const backgroundColor = isDark ? '#0E0B08' : '#FAF7F2';
   const textColor = isDark ? '#EDE4D6' : UMBER;
@@ -141,6 +141,7 @@ export const SessionExecutionScreen: React.FC = () => {
       setClock(clockToUse);
       setNow(Date.now());
       persistRun(clockToUse, resumedExtra);
+      if (!resumed) cue('session_start');
     })();
     // Runs once per session: later clock changes go through updateClock.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,16 +154,6 @@ export const SessionExecutionScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [clock, isPaused, position.done]);
 
-  const playBell = useCallback(() => {
-    try {
-      if (transitionPlayer.playing) transitionPlayer.pause();
-      transitionPlayer.seekTo(0);
-      transitionPlayer.play();
-    } catch (error) {
-      console.log('Error playing sound:', error);
-    }
-  }, [transitionPlayer]);
-
   const handleSessionComplete = useCallback(() => {
     clearRun();
     setShowControls(false);
@@ -170,19 +161,16 @@ export const SessionExecutionScreen: React.FC = () => {
     Animated.timing(completionOpacity, { toValue: 1, duration: 1500, useNativeDriver: true }).start();
   }, [completionOpacity]);
 
-  // Cue every boundary once. After a long suspension several boundaries collapse into one bell.
+  // Cue every boundary once, by role. After a long suspension several boundaries collapse into one cue.
   useEffect(() => {
     if (!clock) return;
     const index = position.index;
     if (previousIndex.current !== null && index !== previousIndex.current) {
-      playBell();
-      if (settings.haptics && (currentSegment?.kind === 'switch' || currentSegment?.side)) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      }
+      cue(cueRoleAt(segments, index));
       if (position.done) handleSessionComplete();
     }
     previousIndex.current = index;
-  }, [clock, position.index, position.done, currentSegment, playBell, handleSessionComplete, settings.haptics]);
+  }, [clock, position.index, position.done, segments, cue, handleSessionComplete]);
 
   const jumpTo = (index: number) => {
     if (clock) updateClock(seekTo(clock, Date.now(), startOf(segments, Math.max(0, index))));
@@ -203,7 +191,7 @@ export const SessionExecutionScreen: React.FC = () => {
 
   // Long press, not an Alert: ending is deliberate but never a modal mid-practice.
   const handleEnd = () => {
-    if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    if (hapticsOn(settings)) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     clearRun();
     navigation.navigate('Home');
   };
@@ -451,31 +439,7 @@ export const SessionExecutionScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <Modal visible={showEdge} transparent animationType="slide" onRequestClose={() => setShowEdge(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={() => setShowEdge(false)} accessibilityLabel="Close" />
-        <View style={{ backgroundColor: isDark ? '#221D18' : '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, gap: 16 }}>
-          <Text accessibilityRole="header" style={{ fontFamily: 'ZenAntiqueSoft_400Regular', fontSize: 24, lineHeight: 32, color: textColor }}>
-            Edge & pain
-          </Text>
-          {[
-            ['Find your edge', 'Go to the first point of real sensation, then back off a little. Around 60–70% is enough.'],
-            ['Dull ache is fine', 'Stretch, pressure and slow heat are what yin works with.'],
-            ['Come out if', 'You feel sharp, electric or burning pain, numbness or tingling, or pain in a joint.'],
-          ].map(([title, body]) => (
-            <View key={title} style={{ gap: 4 }}>
-              <Text style={{ fontSize: 14, fontWeight: '500', color: mutedColor }}>{title}</Text>
-              <Text style={{ fontSize: 16, lineHeight: 24, color: textColor }}>{body}</Text>
-            </View>
-          ))}
-          <TouchableOpacity
-            onPress={() => setShowEdge(false)}
-            accessibilityRole="button"
-            style={{ height: 56, borderRadius: 9999, backgroundColor: TAUPE, alignItems: 'center', justifyContent: 'center', marginTop: 8 }}
-          >
-            <Text style={{ fontSize: 17, fontWeight: '500', color: UMBER }}>Back to the pose</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
+      <SafetyCard visible={showEdge} onClose={() => setShowEdge(false)} />
     </Pressable>
   );
 };

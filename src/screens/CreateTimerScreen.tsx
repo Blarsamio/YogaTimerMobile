@@ -11,6 +11,7 @@ import { SoundSelectModal } from '../components/SoundSelectModal';
 import { SwipeableTimerItem } from '../components/SwipeableTimerItem';
 import { IntermissionModal } from '../components/IntermissionModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Asana } from '../types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -18,6 +19,8 @@ interface Timer {
   id: string;
   duration: number;
   label: string;
+  title?: string; // Pose name when picked from the library
+  asana_id?: number;
 }
 
 const STORAGE_KEYS = {
@@ -116,11 +119,13 @@ export const CreateTimerScreen: React.FC = () => {
     return `${duration} minutes`;
   };
 
-  const handleAddTimer = (duration: number) => {
+  const handleAddTimer = (duration: number, asana: Asana | null) => {
     const newTimer: Timer = {
       id: Date.now().toString(),
       duration,
-      label: `${formatDuration(duration)}`,
+      label: asana ? `${asana.title} · ${duration} min` : formatDuration(duration),
+      title: asana?.title,
+      asana_id: asana?.id,
     };
     const updatedTimers = [...timers, newTimer];
     setTimers(updatedTimers);

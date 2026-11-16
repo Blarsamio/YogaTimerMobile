@@ -17,6 +17,8 @@ interface Timer {
   id: string;
   duration: number;
   label: string;
+  title?: string;
+  asana_id?: number;
 }
 
 interface BackgroundMusicTrack {
@@ -220,7 +222,8 @@ export const BackgroundMusicScreen: React.FC = () => {
       timers: timers.map((timer, index) => ({
         id: timer.id,
         duration: timer.duration * 60,
-        title: timer.label,
+        title: timer.title ?? timer.label,
+          asana_id: timer.asana_id,
         session_id: Date.now().toString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -249,7 +252,8 @@ export const BackgroundMusicScreen: React.FC = () => {
         deviceId: deviceId || undefined,
         rebound_seconds: reboundSeconds,
         timers: timers.map(timer => ({
-          title: timer.label,
+          title: timer.title ?? timer.label,
+          asana_id: timer.asana_id,
           duration: timer.duration * 60,
         })),
       });

@@ -1,15 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { FormModal } from './FormModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAsanas } from '../hooks/useAsanas';
+import { Asana } from '../types';
+
+const toMinutes = (seconds: number) => Math.round((seconds / 60) * 10) / 10;
+
+// "Clark suggests 1–2 min" when the chosen minutes fall outside the pose's range. Never blocks.
+export const rangeHint = (asana: Asana | null, minutes: number) => {
+  if (!asana?.min_seconds || !asana.max_seconds) return null;
+  const seconds = minutes * 60;
+  if (seconds >= asana.min_seconds && seconds <= asana.max_seconds) return null;
+  const range = asana.min_seconds === asana.max_seconds
+    ? `${toMinutes(asana.min_seconds)}`
+    : `${toMinutes(asana.min_seconds)}–${toMinutes(asana.max_seconds)}`;
+  return `Clark suggests ${range} min for ${asana.title}`;
+};
 
 interface TimerCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddTimer: (duration: number) => void;
+  onAddTimer: (duration: number, asana: Asana | null) => void;
 }
 
 export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
@@ -19,6 +34,16 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
 }) => {
   const { isDark } = useTheme();
   const [minutes, setMinutes] = useState(5);
+  const [asana, setAsana] = useState<Asana | null>(null);
+  const { data: asanas = [] } = useAsanas();
+
+  // Picking a pose sets its default hold; tapping it again goes back to a plain timer.
+  const choosePose = (picked: Asana) => {
+    triggerHaptic();
+    if (asana?.id === picked.id) return setAsana(null);
+    setAsana(picked);
+    if (picked.default_seconds) setMinutes(Math.max(1, Math.round(picked.default_seconds / 60)));
+  };
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -104,8 +129,9 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
     } catch (error) {
       // Failed to save timer duration
     }
-    onAddTimer(minutes);
+    onAddTimer(minutes, asana);
     setMinutes(5);
+    setAsana(null);
   };
 
   const formatDuration = (mins: number) => {
@@ -120,6 +146,24 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
   return (
     <FormModal isOpen={isOpen} onClose={onClose}>
       <View className="items-center">
+        {asanas.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxWidth: 360, marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>
+            {asanas.map((item) => {
+              const on = asana?.id === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() => choosePose(item)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  style={{ height: 40, paddingHorizontal: 14, borderRadius: 9999, justifyContent: 'center', backgroundColor: on ? '#C08A6A' : cardBgColor }}
+                >
+                  <Text style={{ fontSize: 15, color: on ? '#17130F' : textColor }}>{item.title}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
         {/* Timer Card */}
         <View
           className="rounded-3xl p-8 items-center mx-4 aspect-square flex-col"
@@ -154,6 +198,11 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
             >
               {formatDuration(minutes)}
             </Text>
+            {asana && (
+              <Text style={{ color: '#A89C8C', fontSize: 13, textAlign: 'center' }} numberOfLines={2}>
+                {rangeHint(asana, minutes) ?? asana.title}
+              </Text>
+            )}
           </View>
 
           {/* Arrow Controls */}

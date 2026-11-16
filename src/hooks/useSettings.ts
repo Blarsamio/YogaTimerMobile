@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// How transitions are announced: bells, a soft tap, both, or nothing.
+export type CueMode = 'bells' | 'both' | 'haptics' | 'silent';
+
 export interface Settings {
-  haptics: boolean;
+  cueMode: CueMode;
   keepAwake: boolean;
   reboundSeconds: number;
 }
 
-export const DEFAULT_SETTINGS: Settings = { haptics: true, keepAwake: true, reboundSeconds: 45 };
+export const DEFAULT_SETTINGS: Settings = { cueMode: 'both', keepAwake: true, reboundSeconds: 45 };
+
+export const hapticsOn = (settings: Settings) => settings.cueMode === 'both' || settings.cueMode === 'haptics';
 
 const KEY = 'settings';
 
@@ -17,7 +22,14 @@ export const useSettings = () => {
 
   useEffect(() => {
     AsyncStorage.getItem(KEY)
-      .then((raw) => raw && setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(raw) }))
+      .then((raw) => {
+        if (!raw) return;
+        const stored = JSON.parse(raw);
+        // Before cue modes there was only a haptics toggle.
+        if (!stored.cueMode && stored.haptics === false) stored.cueMode = 'bells';
+        delete stored.haptics;
+        setSettings({ ...DEFAULT_SETTINGS, ...stored });
+      })
       .catch(() => {});
   }, []);
 

@@ -239,7 +239,7 @@ export const AsanaShow: React.FC = () => {
         {renderSection('Counterposes', asana.counterposes, 'refresh-outline')}
 
         {/* Meridians & Organs */}
-        {renderSection('Meridians & Organs', asana.meridians_and_organs, 'body-outline')}
+        {renderSection('Meridians (in TCM tradition)', asana.meridians_and_organs, 'body-outline')}
 
         {/* Joints Affected */}
         {renderSection('Joints Affected', asana.joints, 'fitness-outline')}
