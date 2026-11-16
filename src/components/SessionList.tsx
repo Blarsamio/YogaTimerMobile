@@ -58,13 +58,15 @@ export const SessionList: React.FC<SessionListProps> = ({
           )}
         </View>
 
-        <TouchableOpacity
-          onPress={() => onDelete(item.id)}
-          className="p-2 rounded-full opacity-50"
-          activeOpacity={0.7}
-        >
-          <Ionicons name="close" size={20} color={textColor} />
-        </TouchableOpacity>
+        {!item.preset && (
+          <TouchableOpacity
+            onPress={() => onDelete(item.id)}
+            className="p-2 rounded-full opacity-50"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={20} color={textColor} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Session Stats */}

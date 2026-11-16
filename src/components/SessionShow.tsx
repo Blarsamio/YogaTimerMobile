@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, ScrollView, Text, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Session, Asana, Timer } from '../types';
+import { Session, Timer } from '../types';
 import { ApiService } from '../config/api';
 import { H1, BackButton } from './ui';
 import { Loading } from './common/Loading';
@@ -31,7 +31,6 @@ export const SessionShow: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [asanas, setAsanas] = useState<Asana[]>([]);
   const { deviceId } = useDeviceUser();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -49,7 +48,6 @@ export const SessionShow: React.FC = () => {
 
   useEffect(() => {
     fetchSession();
-    fetchAsanas();
   }, [sessionId]);
 
   const fetchSession = async () => {
@@ -76,44 +74,15 @@ export const SessionShow: React.FC = () => {
     }
   };
 
-  const fetchAsanas = async () => {
-    try {
-      const response = await ApiService.getAsanas();
-      if (response.data && Array.isArray(response.data)) {
-        setAsanas(response.data);
-      } else {
-        console.warn('Asanas data is not an array:', response);
-        setAsanas([]);
-      }
-    } catch (err) {
-      console.error('Failed to fetch asanas:', err);
-      setAsanas([]);
-    }
-  };
-
     const handleTimerPress = (timer: Timer) => {
-    // Check if timer has a title
-    if (!timer.title) {
-      Alert.alert(
-        'No Title',
-        'This timer does not have a title to match with asana details.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
-    // Find matching asana by title
-    const matchingAsana = asanas.find(asana =>
-      asana.title.toLowerCase().trim() === timer.title!.toLowerCase().trim()
-    );
-
-    if (matchingAsana) {
-      navigation.navigate('AsanaDetail', { asanaId: matchingAsana.id });
+    // The server links timers to asanas by title (Timer#link_asana); unlinked = custom pose.
+    if (timer.asana_id) {
+      navigation.navigate('AsanaDetail', { asanaId: timer.asana_id });
     } else {
       // Show an alert if no matching asana is found
       Alert.alert(
         'Asana Details Not Available',
-        `No detailed information found for "${timer.title}". This might be a custom pose.`,
+        `No detailed information found for "${timer.title ?? 'this timer'}". This might be a custom pose.`,
         [{ text: 'OK' }]
       );
     }
@@ -130,7 +99,7 @@ export const SessionShow: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const response = await ApiService.deleteTimer(timerId);
+              const response = await ApiService.deleteTimer(timerId, deviceId ?? undefined);
 
               if (response.error) {
                 throw new Error(response.error);

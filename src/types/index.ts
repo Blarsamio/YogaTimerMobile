@@ -7,6 +7,7 @@ export interface Session {
   updated_at: string;
   timers: Timer[];
   device_id?: string;
+  preset?: boolean; // Seeded flow: shared by all devices, not editable or deletable
 }
 
 export interface Timer {
@@ -14,6 +15,9 @@ export interface Timer {
   duration: number; // Duration in seconds (Rails stores in seconds)
   title?: string;
   session_id: number | string;
+  asana_id?: number | null; // Library pose this timer holds (linked server-side by title)
+  instruction?: string | null; // e.g. "Right leg forward"
+  counterpose?: string | null;
   created_at: string;
   updated_at: string;
 }

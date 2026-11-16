@@ -1,12 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiService } from '../config/api';
 import { Session } from '../types';
+import { useDeviceUser } from './useDeviceUser';
 
 export const useSessions = () => {
+  const { deviceId, isLoading: isDeviceLoading } = useDeviceUser();
   return useQuery({
-    queryKey: ['sessions'],
+    queryKey: ['sessions', 'list', deviceId],
+    enabled: !isDeviceLoading,
     queryFn: async () => {
-      const { data, error } = await ApiService.getSessions();
+      const { data, error } = await ApiService.getSessions(deviceId ?? undefined);
       if (error) throw new Error(error);
       return (data || []).sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -43,9 +46,10 @@ export const useCreateSession = () => {
 
 export const useDeleteSession = () => {
   const queryClient = useQueryClient();
+  const { deviceId } = useDeviceUser();
   return useMutation({
     mutationFn: async (id: number | string) => {
-      const { error } = await ApiService.deleteSession(id);
+      const { error } = await ApiService.deleteSession(id, deviceId ?? undefined);
       if (error) throw new Error(error);
     },
     onSuccess: () => {

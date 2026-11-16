@@ -76,9 +76,11 @@ export class ApiService {
     }
   }
 
-  static async getSessions(): Promise<ApiResponse<Session[]>> {
+  // Presets plus this device's own sessions.
+  static async getSessions(deviceId?: string): Promise<ApiResponse<Session[]>> {
     try {
-      const response = await this.fetchWithTimeout(endpoints.sessions);
+      const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : '';
+      const response = await this.fetchWithTimeout(`${endpoints.sessions}${query}`);
       return this.handleResponse<Session[]>(response);
     } catch (error) {
       return {
@@ -148,9 +150,10 @@ export class ApiService {
     }
   }
 
-  static async deleteSession(id: number | string): Promise<ApiResponse<null>> {
+  static async deleteSession(id: number | string, deviceId?: string): Promise<ApiResponse<null>> {
     try {
-      const response = await this.fetchWithTimeout(`${endpoints.sessions}/${id}`, {
+      const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : '';
+      const response = await this.fetchWithTimeout(`${endpoints.sessions}/${id}${query}`, {
         method: 'DELETE',
       });
 
@@ -167,14 +170,14 @@ export class ApiService {
     }
   }
 
-  static async createTimer(sessionId: number | string, timerData: { duration: number; title?: string }): Promise<ApiResponse<Timer>> {
+  static async createTimer(sessionId: number | string, timerData: { duration: number; title?: string }, deviceId?: string): Promise<ApiResponse<Timer>> {
     try {
       const response = await this.fetchWithTimeout(endpoints.timer(sessionId), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(timerData),
+        body: JSON.stringify({ timer: timerData, device_id: deviceId }),
       });
       return this.handleResponse<Timer>(response);
     } catch (error) {
@@ -185,9 +188,10 @@ export class ApiService {
     }
   }
 
-  static async deleteTimer(timerId: number | string): Promise<ApiResponse<null>> {
+  static async deleteTimer(timerId: number | string, deviceId?: string): Promise<ApiResponse<null>> {
     try {
-      const response = await this.fetchWithTimeout(endpoints.deleteTimer(timerId), {
+      const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : '';
+      const response = await this.fetchWithTimeout(`${endpoints.deleteTimer(timerId)}${query}`, {
         method: 'DELETE',
       });
 
