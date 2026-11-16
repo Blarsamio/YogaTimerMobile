@@ -10,27 +10,28 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary colors from your design system
+        // Ember & Clay. Clay replaces the old slate (#70798C).
+        umber: '#17130F', // dark background; also labels on taupe/clay (6.7:1, 6.2:1)
+        'umber-deep': '#0E0B08', // practice screen
+        'surface-dark': '#221D18',
+        card: '#2A231C',
+        line: '#3A3128',
+        ink: '#EDE4D6',
+        muted: '#A89C8C',
+        clay: '#C08A6A', // progress, continue, active states
         primary: {
-          black: '#1C1C1C',
-          'blue-gray': '#6B7280', // The blue-gray from your palette
-          white: '#FFFFFF',
-          cream: '#F5F5F5', // Light cream/beige
-          taupe: '#A99985', // The brown/taupe color
+          black: '#17130F',
+          taupe: '#A99985',
         },
-        // Legacy colors (keeping for backward compatibility)
         white: '#FFFFFF',
         bone: '#F5F1ED',
-        gold: '#A99985',
-        blue: '#70798C',
-        black: '#1C1C1C',
-        // New semantic colors
-        background: '#FFFFFF',
-        surface: '#F5F5F5',
-        accent: '#A99985',
+        black: '#17130F',
+        background: '#FAF7F2',
+        surface: '#F5F1ED',
+        accent: '#A99985', // taupe: primary buttons, timer numerals
         text: {
-          primary: '#1C1C1C',
-          secondary: '#6B7280',
+          primary: '#17130F',
+          secondary: '#6B5E4F',
         }
       },
       fontFamily: {

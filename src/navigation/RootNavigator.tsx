@@ -13,6 +13,8 @@ import { CreateTimerScreen } from "../screens/CreateTimerScreen";
 import { BackgroundMusicScreen } from "../screens/BackgroundMusicScreen";
 import { SessionExecutionScreen } from "../screens/SessionExecutionScreen";
 import { ContactScreen } from "../screens/ContactScreen";
+import { SessionSummaryScreen } from "../screens/SessionSummaryScreen";
+import { SettingsScreen } from "../screens/SettingsScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -24,7 +26,7 @@ export const RootNavigator = () => {
         headerStyle: {
           backgroundColor: "#A99985",
         },
-        headerTintColor: "#fff",
+        headerTintColor: "#17130F",
         headerTitleStyle: {
           fontWeight: "bold",
         },
@@ -89,6 +91,16 @@ export const RootNavigator = () => {
         name="Contact"
         component={ContactScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SessionSummary"
+        component={SessionSummaryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: false, presentation: "transparentModal", animation: "slide_from_bottom" }}
       />
     </Stack.Navigator>
   );

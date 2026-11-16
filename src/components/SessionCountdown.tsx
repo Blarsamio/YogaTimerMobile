@@ -54,14 +54,14 @@ export const SessionCountdown: React.FC = () => {
   if (!session) {
     return (
       <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#D4AF37" />
+        <ActivityIndicator size="large" color="#A99985" />
       </View>
     );
   }
 
   return (
     <View className="flex-1 items-center p-6">
-      <Text className="text-4xl text-black font-semibold mb-4">{session.name}</Text>
+      <Text className="text-4xl text-ink font-semibold mb-4">{session.name}</Text>
       <View className="items-center mt-4">
         <CountdownCircleTimer
           key={key}
@@ -73,10 +73,10 @@ export const SessionCountdown: React.FC = () => {
         >
           {({ remainingTime }) => (
             <View className="items-center">
-              <Text className="text-black text-5xl">
+              <Text className="text-ink text-5xl">
                 {Math.floor(remainingTime / 60)}:{('0' + (remainingTime % 60)).slice(-2)}
               </Text>
-              <Text className="text-2xl text-black mt-2">
+              <Text className="text-2xl text-ink mt-2">
                 {session.timers[currentTimerIndex].title}
               </Text>
             </View>
@@ -84,9 +84,9 @@ export const SessionCountdown: React.FC = () => {
         </CountdownCircleTimer>
         <TouchableOpacity
           onPress={handleSkip}
-          className="bg-gold p-2 rounded mt-4 w-full"
+          className="bg-accent p-2 rounded mt-4 w-full"
         >
-          <Text className="text-white text-center">Skip</Text>
+          <Text className="text-umber text-center">Skip</Text>
         </TouchableOpacity>
       </View>
     </View>

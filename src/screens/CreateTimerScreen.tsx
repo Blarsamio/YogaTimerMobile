@@ -37,8 +37,8 @@ export const CreateTimerScreen: React.FC = () => {
   const [isIntermissionModalOpen, setIsIntermissionModalOpen] = useState(false);
   const [selectedSound, setSelectedSound] = useState<string>('bowl');
 
-  const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
+  const backgroundColor = isDark ? '#17130F' : '#FAF7F2';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
 
   const loadPersistedState = async () => {
     try {
@@ -208,15 +208,15 @@ export const CreateTimerScreen: React.FC = () => {
           }}
           className={`flex-1 py-3 px-6 rounded-l-lg border ${
             activeTab === 'timer'
-              ? 'bg-accent border-accent'
-              : 'bg-surface dark:bg-primary-black border-accent/30'
+              ? 'bg-clay border-clay'
+              : 'bg-surface dark:bg-umber border-accent/30'
           }`}
           activeOpacity={0.8}
         >
           <Text
             className="text-center text-body font-ubuntu-medium"
             style={{
-              color: activeTab === 'timer' ? '#FFFFFF' : textColor
+              color: activeTab === 'timer' ? '#17130F' : textColor
             }}
           >
             add timer
@@ -231,15 +231,15 @@ export const CreateTimerScreen: React.FC = () => {
           }}
           className={`flex-1 py-3 px-6 rounded-r-lg border ${
             activeTab === 'sound'
-              ? 'bg-accent border-accent'
-              : 'bg-surface dark:bg-primary-black border-accent/30'
+              ? 'bg-clay border-clay'
+              : 'bg-surface dark:bg-umber border-accent/30'
           }`}
           activeOpacity={0.8}
         >
           <Text
             className="text-center text-body font-ubuntu-medium"
             style={{
-              color: activeTab === 'sound' ? '#FFFFFF' : textColor
+              color: activeTab === 'sound' ? '#17130F' : textColor
             }}
           >
             change alert
@@ -303,7 +303,7 @@ export const CreateTimerScreen: React.FC = () => {
         }}
         activeOpacity={0.8}
       >
-        <Ionicons name="add" size={32} color="white" />
+        <Ionicons name="add" size={32} color="#17130F" />
       </TouchableOpacity>
 
       <IntermissionModal

@@ -109,8 +109,9 @@ Uses **Expo Audio** for:
 - Responsive design with mobile-first approach
 
 **Color Palette & Theme System**:
-- **Light Mode**: Primary accent `#A99985`, surface `#F5F1ED`, background `#FFFFFF`
-- **Dark Mode**: Background `#1A1A1A`, surface `#2D2D2D`, text `#E8E3D8`
+- **Ember & Clay** (dark is primary): background umber `#17130F`, surface `#221D18`, card `#2A231C`, line `#3A3128`, ink `#EDE4D6`, muted `#A89C8C`, practice `#0E0B08`
+- Taupe `#A99985` for primary buttons and timer numerals; clay `#C08A6A` (replaced slate) for progress and selected states; labels on taupe/clay are umber, never white (contrast)
+- **Light Mode**: background `#FAF7F2`, surface `#F5F1ED`, text `#17130F`
 - Theme context provides `isDark` boolean and `toggleTheme()` function
 - **Typography**: ZenAntique font for headers, system fonts for body text
 - **Custom Sizing**: Button radius `24px`, touch targets ≥44pt for accessibility

@@ -9,7 +9,7 @@ interface TypographyProps extends TextProps {
 // Header components using Zen Antique Soft
 export const H1: React.FC<TypographyProps> = ({ children, className = '', ...props }) => {
   return (
-    <Text className={`font-zen text-text-primary ${className}`} {...props}>
+    <Text className={`font-zen text-text-primary dark:text-ink ${className}`} {...props}>
       {children}
     </Text>
   );
@@ -17,7 +17,7 @@ export const H1: React.FC<TypographyProps> = ({ children, className = '', ...pro
 
 export const H2: React.FC<TypographyProps> = ({ children, className = '', ...props }) => {
   return (
-    <Text className={`font-zen text-h2 text-text-primary ${className}`} {...props}>
+    <Text className={`font-zen text-h2 text-text-primary dark:text-ink ${className}`} {...props}>
       {children}
     </Text>
   );
@@ -26,7 +26,7 @@ export const H2: React.FC<TypographyProps> = ({ children, className = '', ...pro
 // Body text components using Ubuntu
 export const BodyText: React.FC<TypographyProps> = ({ children, className = '', ...props }) => {
   return (
-    <Text className={`font-ubuntu text-body text-text-primary ${className}`} {...props}>
+    <Text className={`font-ubuntu text-body text-text-primary dark:text-ink ${className}`} {...props}>
       {children}
     </Text>
   );
@@ -34,7 +34,7 @@ export const BodyText: React.FC<TypographyProps> = ({ children, className = '', 
 
 export const BodyTextSmall: React.FC<TypographyProps> = ({ children, className = '', ...props }) => {
   return (
-    <Text className={`font-ubuntu text-body-sm text-text-secondary ${className}`} {...props}>
+    <Text className={`font-ubuntu text-body-sm text-text-secondary dark:text-muted ${className}`} {...props}>
       {children}
     </Text>
   );

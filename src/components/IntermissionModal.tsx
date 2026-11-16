@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { FormModal } from './FormModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useSettings } from '../hooks/useSettings';
 
 interface IntermissionModalProps {
   isOpen: boolean;
@@ -10,7 +11,7 @@ interface IntermissionModalProps {
   onSelectIntermission: (duration: number) => void;
 }
 
-const INTERMISSION_OPTIONS = [
+export const INTERMISSION_OPTIONS = [
   { duration: 0, label: 'None', icon: 'close-circle-outline' },
   { duration: 30, label: '30 seconds', icon: 'hourglass-outline' },
   { duration: 45, label: '45 seconds', icon: 'hourglass-outline' },
@@ -26,10 +27,15 @@ export const IntermissionModal: React.FC<IntermissionModalProps> = ({
 }) => {
   const { isDark } = useTheme();
   const [selectedDuration, setSelectedDuration] = useState<number>(45);
+  const [settings] = useSettings();
 
-  const textColor = isDark ? '#F5F5F3' : '#1C1C1C';
-  const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
-  const optionBgColor = isDark ? '#2D2D2D' : '#FFFFFF';
+  useEffect(() => {
+    if (isOpen) setSelectedDuration(settings.reboundSeconds);
+  }, [isOpen, settings.reboundSeconds]);
+
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
+  const cardBgColor = isDark ? '#2A231C' : '#F5F1ED';
+  const optionBgColor = isDark ? '#221D18' : '#FFFFFF';
 
   const handleSelect = (duration: number) => {
     setSelectedDuration(duration);
@@ -79,10 +85,10 @@ export const IntermissionModal: React.FC<IntermissionModalProps> = ({
                 key={option.duration}
                 onPress={() => handleSelect(option.duration)}
                 className={`rounded-2xl mb-3 overflow-hidden ${
-                  selectedDuration === option.duration ? 'border-2 border-accent' : 'border border-accent/20'
+                  selectedDuration === option.duration ? 'border-2 border-clay' : 'border border-accent/20'
                 }`}
                 style={{
-                  backgroundColor: selectedDuration === option.duration ? '#A99985' : optionBgColor
+                  backgroundColor: selectedDuration === option.duration ? '#C08A6A' : optionBgColor
                 }}
                 activeOpacity={0.8}
               >
@@ -90,12 +96,12 @@ export const IntermissionModal: React.FC<IntermissionModalProps> = ({
                   <View className="flex-row items-center">
                     {/* Icon */}
                     <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${
-                      selectedDuration === option.duration ? 'bg-white/20' : 'bg-accent/10'
+                      selectedDuration === option.duration ? 'bg-umber/10' : 'bg-accent/10'
                     }`}>
                       <Ionicons
                         name={option.icon as keyof typeof Ionicons.glyphMap}
                         size={24}
-                        color={selectedDuration === option.duration ? 'white' : '#A99985'}
+                        color={selectedDuration === option.duration ? '#17130F' : '#A99985'}
                       />
                     </View>
 
@@ -104,7 +110,7 @@ export const IntermissionModal: React.FC<IntermissionModalProps> = ({
                       <Text
                         className="text-lg font-ubuntu-medium"
                         style={{
-                          color: selectedDuration === option.duration ? 'white' : textColor
+                          color: selectedDuration === option.duration ? '#17130F' : textColor
                         }}
                       >
                         {option.label}
@@ -137,7 +143,7 @@ export const IntermissionModal: React.FC<IntermissionModalProps> = ({
           }}
           activeOpacity={0.8}
         >
-          <Text className="text-white text-lg font-ubuntu-medium">
+          <Text className="text-umber text-lg font-ubuntu-medium">
             Confirm
           </Text>
         </TouchableOpacity>

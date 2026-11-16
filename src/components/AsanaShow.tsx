@@ -27,9 +27,9 @@ export const AsanaShow: React.FC = () => {
 
   const asanaId = (route.params as { asanaId: number }).asanaId;
 
-  const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
-  const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
+  const backgroundColor = isDark ? '#17130F' : '#FAF7F2';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
+  const cardBgColor = isDark ? '#2A231C' : '#F5F1ED';
   const accentColor = '#A99985';
 
   const fetchAsana = async () => {
@@ -155,7 +155,7 @@ export const AsanaShow: React.FC = () => {
             className="bg-accent px-6 py-3 rounded-lg"
             activeOpacity={0.8}
           >
-            <Text className="text-white font-zen text-center">
+            <Text className="text-umber font-zen text-center">
               Try Again
             </Text>
           </TouchableOpacity>

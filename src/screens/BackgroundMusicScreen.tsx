@@ -92,9 +92,9 @@ export const BackgroundMusicScreen: React.FC = () => {
 
   const previewPlayer = useAudioPlayer(require('../../assets/audio/bowl.wav'));
 
-  const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
-  const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
+  const backgroundColor = isDark ? '#17130F' : '#FAF7F2';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
+  const cardBgColor = isDark ? '#2A231C' : '#F5F1ED';
 
   const loadSessionData = async () => {
     try {
@@ -228,7 +228,7 @@ export const BackgroundMusicScreen: React.FC = () => {
     };
 
     await clearSessionData();
-    navigation.navigate('SessionExecution', {
+    navigation.navigate('SessionSummary', {
       session: customSession,
       transitionSound: selectedSound,
       backgroundMusic: noBackgroundMusic ? undefined : (selectedMusicId ?? undefined),
@@ -313,8 +313,8 @@ export const BackgroundMusicScreen: React.FC = () => {
           </View>
 
           {isSelected && (
-            <View className="absolute top-4 right-4 w-8 h-8 rounded-full bg-accent items-center justify-center">
-              <Ionicons name="checkmark" size={18} color="white" />
+            <View className="absolute top-4 right-4 w-8 h-8 rounded-full bg-clay items-center justify-center">
+              <Ionicons name="checkmark" size={18} color="#17130F" />
             </View>
           )}
 
@@ -329,7 +329,7 @@ export const BackgroundMusicScreen: React.FC = () => {
             <Ionicons
               name={previewPlaying === track.id ? "pause" : "play"}
               size={20}
-              color="white"
+              color="#17130F"
             />
           </TouchableOpacity>
         </View>
@@ -351,7 +351,7 @@ export const BackgroundMusicScreen: React.FC = () => {
       <View className="flex-row justify-center mb-8">
         <View className="flex-row bg-accent/10 rounded-full p-1">
           <View className="px-4 py-2 rounded-full bg-accent">
-            <Text className="text-sm font-ubuntu-medium text-white">
+            <Text className="text-sm font-ubuntu-medium text-umber">
               Music
             </Text>
           </View>
@@ -389,7 +389,7 @@ export const BackgroundMusicScreen: React.FC = () => {
             <View
               key={index}
               className={`w-2 h-2 rounded-full mx-1 ${
-                index === currentIndex ? 'bg-accent' : 'bg-accent/30'
+                index === currentIndex ? 'bg-clay' : 'bg-accent/30'
               }`}
             />
           ))}
@@ -408,10 +408,10 @@ export const BackgroundMusicScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <View className={`w-6 h-6 rounded-full border-2 border-accent mr-3 items-center justify-center ${
-            noBackgroundMusic ? 'bg-accent' : 'bg-transparent'
+            noBackgroundMusic ? 'bg-clay border-clay' : 'bg-transparent'
           }`}>
             {noBackgroundMusic && (
-              <Ionicons name="checkmark" size={14} color="white" />
+              <Ionicons name="checkmark" size={14} color="#17130F" />
             )}
           </View>
           <Text
@@ -442,7 +442,7 @@ export const BackgroundMusicScreen: React.FC = () => {
           className="flex-1 py-4 px-6 rounded-full bg-accent"
           activeOpacity={0.8}
         >
-          <Text className="text-center text-lg font-ubuntu-medium text-white">
+          <Text className="text-center text-lg font-ubuntu-medium text-umber">
             start ▶
           </Text>
         </TouchableOpacity>
@@ -476,10 +476,10 @@ export const BackgroundMusicScreen: React.FC = () => {
                 value={sessionName}
                 onChangeText={setSessionName}
                 placeholder="Ex: Morning Flow"
-                placeholderTextColor={isDark ? '#666' : '#999'}
+                placeholderTextColor={isDark ? '#A89C8C' : '#A89C8C'}
                 className="w-full p-4 rounded-xl mb-6 text-lg font-zen border"
                 style={{
-                  backgroundColor: isDark ? '#2C2C2C' : '#F0F0F0',
+                  backgroundColor: isDark ? '#221D18' : '#F0F0F0',
                   color: textColor,
                   borderColor: 'transparent'
                 }}
@@ -503,9 +503,9 @@ export const BackgroundMusicScreen: React.FC = () => {
                   disabled={isSaving}
                 >
                   {isSaving ? (
-                    <ActivityIndicator color="white" size="small" />
+                    <ActivityIndicator color="#17130F" size="small" />
                   ) : (
-                    <Text className="text-center font-ubuntu-medium text-white">
+                    <Text className="text-center font-ubuntu-medium text-umber">
                       Save
                     </Text>
                   )}

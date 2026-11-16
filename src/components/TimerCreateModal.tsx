@@ -47,8 +47,8 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
     };
   }, []);
 
-  const textColor = isDark ? '#F5F5F3' : '#1C1C1C';
-  const cardBgColor = isDark ? '#3D3D3D' : '#F5F1ED';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
+  const cardBgColor = isDark ? '#2A231C' : '#F5F1ED';
 
   const triggerHaptic = () => {
     try {
@@ -172,7 +172,7 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
             <Ionicons
               name="chevron-back"
               size={28}
-              color={minutes <= 1 ? '#999' : textColor}
+              color={minutes <= 1 ? '#A89C8C' : textColor}
             />
           </TouchableOpacity>
 
@@ -190,7 +190,7 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
             <Ionicons
               name="chevron-forward"
               size={28}
-              color={minutes >= 120 ? '#999' : textColor}
+              color={minutes >= 120 ? '#A89C8C' : textColor}
             />
           </TouchableOpacity>
           </View>
@@ -213,7 +213,7 @@ export const TimerCreateModal: React.FC<TimerCreateModalProps> = ({
           accessibilityHint={`Add a ${minutes} minute timer`}
           accessibilityRole="button"
         >
-          <Text className="text-white text-lg font-ubuntu-medium">
+          <Text className="text-umber text-lg font-ubuntu-medium">
             add
           </Text>
         </TouchableOpacity>

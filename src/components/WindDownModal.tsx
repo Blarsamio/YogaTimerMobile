@@ -15,11 +15,11 @@ export const WindDownModal: React.FC<WindDownModalProps> = ({ onClose, children 
       onRequestClose={onClose}
     >
       <View className="flex-1 p-6 bg-gray-600/50 justify-center items-center">
-        <View className="bg-white p-6 rounded-lg shadow-lg border border-gold">
+        <View className="bg-white p-6 rounded-lg shadow-lg border border-accent">
           {children}
           <TouchableOpacity
             onPress={onClose}
-            className="mt-4 bg-gold px-4 py-2 rounded"
+            className="mt-4 bg-accent px-4 py-2 rounded"
           >
             <Text className="text-center">Close</Text>
           </TouchableOpacity>

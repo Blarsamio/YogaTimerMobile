@@ -16,8 +16,8 @@ export const SessionsScreen: React.FC<Props> = ({ navigation }) => {
   const { mutate: deleteSession } = useDeleteSession();
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
+  const backgroundColor = isDark ? '#17130F' : '#FAF7F2';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
 
   const handleBack = () => {
     navigation.navigate('Home');
@@ -46,7 +46,7 @@ export const SessionsScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleStartSession = (session: Session) => {
     // Navigate to session execution with default preferences
-    navigation.navigate('SessionExecution', {
+    navigation.navigate('SessionSummary', {
       session,
       transitionSound: 'bowl', // Default transition sound
       backgroundMusic: undefined, // No background music by default
@@ -90,7 +90,7 @@ export const SessionsScreen: React.FC<Props> = ({ navigation }) => {
             className="bg-accent px-6 py-3 rounded-lg"
             activeOpacity={0.8}
           >
-            <Text className="text-white font-zen text-center">
+            <Text className="text-umber font-zen text-center">
               Try Again
             </Text>
           </TouchableOpacity>

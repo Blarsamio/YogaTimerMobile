@@ -27,9 +27,9 @@ export const SessionList: React.FC<SessionListProps> = ({
   const navigation = useNavigation<NavigationProp>();
   const { isDark } = useTheme();
 
-  const backgroundColor = isDark ? "#1C1C1C" : "#F5F5F5";
-  const textColor = isDark ? "#F5F5F5" : "#1C1C1C";
-  const cardBgColor = isDark ? "#3D3D3D" : "#F5F1ED";
+  const backgroundColor = isDark ? "#17130F" : "#FAF7F2";
+  const textColor = isDark ? "#EDE4D6" : "#17130F";
+  const cardBgColor = isDark ? "#2A231C" : "#F5F1ED";
   const accentColor = "#A99985";
 
   const calculateSessionDuration = (timers: Timer[]) => {
@@ -101,8 +101,8 @@ export const SessionList: React.FC<SessionListProps> = ({
           activeOpacity={0.8}
         >
           <View className="flex-row items-center">
-            <Ionicons name="play" size={16} color="#FFFFFF" />
-            <Text className="text-white font-ubuntu-medium ml-2">
+            <Ionicons name="play" size={16} color="#17130F" />
+            <Text className="text-umber font-ubuntu-medium ml-2">
               Start Practice
             </Text>
           </View>

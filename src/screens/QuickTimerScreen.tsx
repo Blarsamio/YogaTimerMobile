@@ -23,8 +23,8 @@ export const QuickTimerScreen: React.FC = () => {
   const { isDark } = useTheme();
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
 
-  const backgroundColor = isDark ? '#1C1C1C' : '#F5F5F5';
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
+  const backgroundColor = isDark ? '#17130F' : '#FAF7F2';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
 
   const handleStartTimer = () => {
     if (selectedDuration) {

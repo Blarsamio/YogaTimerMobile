@@ -33,7 +33,7 @@ export const SwipeableTimerItem = React.memo(({
   const { isDark } = useTheme();
   const translateX = useSharedValue(0);
   const deleteOpacity = useSharedValue(1);
-  const textColor = isDark ? '#F5F5F5' : '#1C1C1C';
+  const textColor = isDark ? '#EDE4D6' : '#17130F';
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -99,7 +99,7 @@ export const SwipeableTimerItem = React.memo(({
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[animatedStyle]}>
           <TouchableOpacity
-            className="bg-surface dark:bg-[#1C1C1C] border border-accent/30 rounded-2xl py-4 px-6"
+            className="bg-surface dark:bg-umber border border-accent/30 rounded-2xl py-4 px-6"
             activeOpacity={0.7}
           >
             <Text

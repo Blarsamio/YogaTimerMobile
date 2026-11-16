@@ -10,6 +10,12 @@ export type RootStackParamList = {
     transitionSound: string;
     backgroundMusic?: string;
   };
+  SessionSummary: {
+    session: Session;
+    transitionSound: string;
+    backgroundMusic?: string;
+  };
+  Settings: undefined;
   Asanas: undefined;
   AsanaDetail: { asanaId: number };
   QuickTimer: undefined;

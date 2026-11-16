@@ -38,10 +38,10 @@ export const Timer: React.FC<TimerProps> = ({ duration, title }) => {
   }, [isActive, timeLeft]);
 
   return (
-    <View className="py-2 border border-gold rounded-lg mb-4">
+    <View className="py-2 border border-accent rounded-lg mb-4">
       <View>
-        {title && <Text className="text-gray-500 text-xl font-zen">{title}</Text>}
-        <Text className="text-lg text-black">
+        {title && <Text className="text-muted text-xl font-zen">{title}</Text>}
+        <Text className="text-lg text-ink">
           {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}
         </Text>
       </View>

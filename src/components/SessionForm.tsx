@@ -39,7 +39,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ onCreate }) => {
               onChangeText={setName}
               placeholder="Session Name"
               className="border border-accent/20 p-3 mb-4 w-full bg-background text-text-primary rounded-lg font-ubuntu"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor="#A89C8C"
             />
             <TextInput
               value={description}
@@ -48,7 +48,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ onCreate }) => {
               multiline
               numberOfLines={4}
               className="border border-accent/20 p-3 mb-4 w-full bg-background text-text-primary rounded-lg font-ubuntu"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor="#A89C8C"
               textAlignVertical="top"
             />
             <Button
