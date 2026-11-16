@@ -21,6 +21,7 @@ interface Timer {
 }
 
 const STORAGE_KEYS = {
+  REBOUND_SECONDS: 'createTimer_reboundSeconds',
   TIMER_LIST: 'createTimer_timerList',
   SELECTED_SOUND: 'createTimer_selectedSound',
   ACTIVE_TAB: 'createTimer_activeTab',
@@ -166,27 +167,9 @@ export const CreateTimerScreen: React.FC = () => {
   const handleIntermissionSelect = (duration: number) => {
     setIsIntermissionModalOpen(false);
 
-    let finalTimers = [...timers];
-
-    if (duration > 0 && timers.length > 1) {
-      const timersWithIntermission: Timer[] = [];
-
-      timers.forEach((timer, index) => {
-        timersWithIntermission.push(timer);
-
-        if (index < timers.length - 1) {
-          timersWithIntermission.push({
-            id: `intermission-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
-            duration: duration / 60,
-            label: 'Switch Pose',
-          });
-        }
-      });
-
-      finalTimers = timersWithIntermission;
-    }
-
-    saveTimersToStorage(finalTimers);
+    // Rebound is a session setting; the practice screen inserts it between poses at runtime.
+    AsyncStorage.setItem(STORAGE_KEYS.REBOUND_SECONDS, String(duration)).catch(() => {});
+    saveTimersToStorage(timers);
     navigation.navigate('BackgroundMusic');
   };
 

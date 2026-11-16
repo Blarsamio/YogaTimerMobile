@@ -1,17 +1,27 @@
 import { Session, Timer, Asana, ApiResponse } from '../types';
+import { NativeModules } from 'react-native';
 import Constants from 'expo-constants';
 
-// Configuration for API endpoints
-// Development: Dynamically get IP from Expo config
+// Development: the Rails API runs on the same machine as Metro, so reuse Metro's host.
 const getLocalIp = () => {
   const debuggerHost = Constants.expoConfig?.hostUri;
-  const localhost = '192.168.100.92'; // Fallback to last known good IP
-
   if (debuggerHost) {
     return debuggerHost.split(':')[0];
   }
 
-  return localhost;
+  // Native dev client: the URL the JS bundle was loaded from ("http://192.168.1.11:8081/...").
+  const scriptURL: string | undefined = NativeModules.SourceCode?.getConstants?.().scriptURL;
+  const bundleHost = scriptURL?.match(/^https?:\/\/([^:/]+)/)?.[1];
+  if (bundleHost) {
+    return bundleHost;
+  }
+
+  // Web dev: the page itself is served by Metro.
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return window.location.hostname;
+  }
+
+  return 'localhost';
 };
 
 const LOCAL_IP = getLocalIp();
@@ -102,7 +112,7 @@ export class ApiService {
     }
   }
 
-  static async createSession(sessionData: { name: string; description?: string, timers?: any[], deviceId?: string }): Promise<ApiResponse<Session>> {
+  static async createSession(sessionData: { name: string; description?: string, timers?: any[], deviceId?: string; rebound_seconds?: number }): Promise<ApiResponse<Session>> {
     try {
       const payload = {
         ...sessionData,

@@ -65,6 +65,7 @@ const STORAGE_KEYS = {
   BACKGROUND_MUSIC: 'session_backgroundMusic',
   TIMERS: 'createTimer_timerList',
   SELECTED_SOUND: 'createTimer_selectedSound',
+  REBOUND_SECONDS: 'createTimer_reboundSeconds',
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -77,6 +78,7 @@ export const BackgroundMusicScreen: React.FC = () => {
 
   const [selectedMusicId, setSelectedMusicId] = useState<string | null>(null);
   const [noBackgroundMusic, setNoBackgroundMusic] = useState(false);
+  const [reboundSeconds, setReboundSeconds] = useState(45);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timers, setTimers] = useState<Timer[]>([]);
   const [selectedSound, setSelectedSound] = useState('bowl');
@@ -96,11 +98,16 @@ export const BackgroundMusicScreen: React.FC = () => {
 
   const loadSessionData = async () => {
     try {
-      const [savedTimers, savedSound, savedBackgroundMusic] = await Promise.all([
+      const [savedTimers, savedSound, savedBackgroundMusic, savedRebound] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.TIMERS),
         AsyncStorage.getItem(STORAGE_KEYS.SELECTED_SOUND),
         AsyncStorage.getItem(STORAGE_KEYS.BACKGROUND_MUSIC),
+        AsyncStorage.getItem(STORAGE_KEYS.REBOUND_SECONDS),
       ]);
+
+      if (savedRebound !== null) {
+        setReboundSeconds(Number(savedRebound));
+      }
 
       if (savedTimers) {
         setTimers(JSON.parse(savedTimers));
@@ -166,6 +173,7 @@ export const BackgroundMusicScreen: React.FC = () => {
     try {
       await Promise.all([
         AsyncStorage.removeItem(STORAGE_KEYS.TIMERS),
+        AsyncStorage.removeItem(STORAGE_KEYS.REBOUND_SECONDS),
       ]);
     } catch (error) {
     }
@@ -206,6 +214,7 @@ export const BackgroundMusicScreen: React.FC = () => {
       id: Date.now(),
       name: 'Custom Practice',
       description: 'Your personalized yin yoga flow',
+      rebound_seconds: reboundSeconds,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       timers: timers.map((timer, index) => ({
@@ -238,6 +247,7 @@ export const BackgroundMusicScreen: React.FC = () => {
         name: sessionName.trim(),
         description: 'Custom yoga session',
         deviceId: deviceId || undefined,
+        rebound_seconds: reboundSeconds,
         timers: timers.map(timer => ({
           title: timer.label,
           duration: timer.duration * 60,
